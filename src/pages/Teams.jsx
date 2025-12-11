@@ -109,8 +109,13 @@ const Teams = () => {
   // VIEW ALL PLAYERS FEATURE
   // ---------------------------
   const handleViewPlayers = async (team) => {
+    console.log("team");
+    console.log(team);
     try {
       const players = await playersAPI.getByTeam(team.id);
+
+      console.log("####players#####");
+      console.log(players);
 
       const sortedPlayers = players.sort((a, b) => b.base_price - a.base_price);
 
@@ -256,22 +261,29 @@ const Teams = () => {
         onClose={closePlayersModal}
         title={`Players - ${selectedTeamName}`}
       >
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {selectedTeamPlayers.map((player) => (
-            <div
-              key={player.id}
-              className="border rounded-lg p-3 shadow-sm bg-white"
-            >
-              <p className="font-bold text-gray-900">{player.player_name}</p>
-              <p className="text-sm text-gray-600">
-                Role: {player.player_role}
-              </p>
-              <p className="text-sm font-semibold text-blue-700">
-                Price: {formatCurrency(player.base_price)}
-              </p>
-            </div>
-          ))}
-        </div>
+        {selectedTeamPlayers && selectedTeamPlayers.length !== 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {selectedTeamPlayers.map((player) => (
+              <div
+                key={player.id}
+                className="border rounded-lg p-3 shadow-sm bg-white"
+              >
+                <p className="font-bold text-gray-900">{player.name}</p>
+                <p className="text-sm text-gray-600">
+                  Role: {player.player_role}
+                </p>
+                <p className="text-sm font-semibold text-blue-700">
+                  Base Price: {formatCurrency(player.base_price)}
+                </p>
+                <p className="text-sm font-semibold text-green-700">
+                  Base Price: {formatCurrency(player.sold_price)}
+                </p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center">No players </div>
+        )}
       </Modal>
     </div>
   );

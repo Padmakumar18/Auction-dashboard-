@@ -48,7 +48,6 @@ export const playersAPI = {
 
     if (error) throw error;
 
-    // If players have team_id, fetch team names separately
     if (data && data.length > 0) {
       const teamIds = [
         ...new Set(data.filter((p) => p.team_id).map((p) => p.team_id)),
@@ -61,7 +60,6 @@ export const playersAPI = {
           .in("id", teamIds);
 
         if (!teamsError && teams) {
-          // Map team names to players
           const teamMap = teams.reduce((acc, team) => {
             acc[team.id] = team;
             return acc;
@@ -111,6 +109,36 @@ export const playersAPI = {
   delete: async (id) => {
     const { error } = await supabase.from("players").delete().eq("id", id);
     if (error) throw error;
+  },
+
+  // ⭐ ADD THIS FUNCTION
+  getByTeam: async (teamId) => {
+    const { data, error } = await supabase
+      .from("players")
+      .select("*")
+      .eq("sold_to", teamId)
+      .order("created_at", { ascending: true });
+
+    console.log("data");
+    console.log(data);
+
+    if (error) throw error;
+
+    // Fetch team name for response enrichment
+    const { data: teamData, error: teamErr } = await supabase
+      .from("teams")
+      .select("id, name")
+      .eq("id", teamId)
+      .single();
+
+    if (!teamErr && teamData) {
+      return data.map((player) => ({
+        ...player,
+        teams: teamData,
+      }));
+    }
+
+    return data;
   },
 };
 
