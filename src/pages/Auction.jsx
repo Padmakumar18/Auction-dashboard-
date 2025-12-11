@@ -245,7 +245,9 @@ const Auction = () => {
     }
   };
 
-  const unsoldCount = players.filter((p) => p.status === "unsold").length;
+  const unsoldCount = players.filter(
+    (p) => p.status === "unsold" || p.status === "available"
+  ).length;
 
   if (loading) return <Loader fullScreen />;
 
@@ -401,7 +403,7 @@ const Auction = () => {
                   <div key={team.id} className="border-b pb-3 last:border-b-0">
                     <div className="flex justify-between items-start mb-2">
                       <h4 className="font-semibold text-gray-900">
-                        {team.name}
+                        {team.team_name}
                       </h4>
                       <span className="text-sm font-semibold text-green-600">
                         {formatCurrency(pointsLeft)}

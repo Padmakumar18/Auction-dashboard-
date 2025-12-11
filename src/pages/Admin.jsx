@@ -213,7 +213,7 @@ const Admin = () => {
                   <div className="flex justify-between items-start mb-3">
                     <div>
                       <h3 className="text-lg font-bold text-gray-900">
-                        {team.name}
+                        {team.team_name}
                       </h3>
                       <p className="text-sm text-gray-600">
                         {teamPlayers.length} players | ₹
