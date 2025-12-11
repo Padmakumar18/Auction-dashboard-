@@ -26,8 +26,9 @@ const Teams = () => {
       setLoading(true);
       const data = await teamsAPI.getAll();
       setTeams(data);
-      console.log("Teams");
-      console.log(teams);
+
+      // console.log("Teams");
+      // console.log(teams);
     } catch (error) {
       console.error("Error loading teams:", error);
       toast.error("Failed to load teams");

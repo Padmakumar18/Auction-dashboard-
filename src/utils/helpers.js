@@ -26,7 +26,9 @@ export const shuffleArray = (array) => {
 
 // Get random player from unsold players
 export const getRandomPlayer = (players) => {
-  const unsoldPlayers = players.filter((p) => p.status === "unsold");
+  const unsoldPlayers = players.filter(
+    (p) => p.status === "unsold" || p.status === "available"
+  );
   if (unsoldPlayers.length === 0) return null;
   return unsoldPlayers[Math.floor(Math.random() * unsoldPlayers.length)];
 };

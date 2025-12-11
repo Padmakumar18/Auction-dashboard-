@@ -35,6 +35,10 @@ const Analytics = () => {
         playersAPI.getAll(),
       ]);
       setTeams(teamsData);
+
+      // console.log("teams");
+      // console.log(teams);
+
       setPlayers(playersData);
     } catch (error) {
       console.error("Error loading data:", error);
@@ -248,7 +252,7 @@ const Analytics = () => {
                   return (
                     <tr key={team.id}>
                       <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
-                        {team.name}
+                        {team.team_name}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-gray-900">
                         {teamPlayers.length}

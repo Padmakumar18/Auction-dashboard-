@@ -49,6 +49,9 @@ const Auction = () => {
       ]);
       setTeams(teamsData);
       setPlayers(playersData);
+
+      console.log("players");
+      console.log(players);
     } catch (error) {
       console.error("Error loading data:", error);
     } finally {
@@ -56,29 +59,75 @@ const Auction = () => {
     }
   };
 
+  // const handleShufflePlayer = async () => {
+  //   const unsoldPlayers = players.filter(
+  //     (p) => p.status === "unsold" || p.status === "available"
+  //   );
+  //   if (unsoldPlayers.length === 0) {
+  //     alert("No unsold players available!");
+  //     return;
+  //   }
+
+  //   setShuffling(true);
+  //   const shuffled = shuffleArray(unsoldPlayers);
+
+  //   // Animate shuffle
+  //   let count = 0;
+  //   const interval = setInterval(() => {
+  //     setShuffleDisplay(shuffled[count % shuffled.length]);
+  //     count++;
+
+  //     if (count >= 20) {
+  //       clearInterval(interval);
+  //       const selectedPlayer = getRandomPlayer(players);
+  //       setCurrentPlayer(selectedPlayer);
+  //       setShuffleDisplay(null);
+  //       setShuffling(false);
+  //       setBidAmount(selectedPlayer.base_price.toString());
+  //     }
+  //   }, 100);
+  // };
+
   const handleShufflePlayer = async () => {
-    const unsoldPlayers = players.filter((p) => p.status === "unsold");
+    const unsoldPlayers = players.filter(
+      (p) => p.status === "unsold" || p.status === "available"
+    );
+
     if (unsoldPlayers.length === 0) {
       alert("No unsold players available!");
       return;
     }
 
     setShuffling(true);
+
     const shuffled = shuffleArray(unsoldPlayers);
 
-    // Animate shuffle
     let count = 0;
+
     const interval = setInterval(() => {
       setShuffleDisplay(shuffled[count % shuffled.length]);
       count++;
 
       if (count >= 20) {
         clearInterval(interval);
-        const selectedPlayer = getRandomPlayer(players);
+
+        // FIX 1: select only from unsold list
+        const selectedPlayer = getRandomPlayer(unsoldPlayers);
+
+        // FIX 2: null protection
+        if (!selectedPlayer) {
+          toast.error("Failed to pick a player due to unexpected data issue.");
+          setShuffling(false);
+          return;
+        }
+
         setCurrentPlayer(selectedPlayer);
+
         setShuffleDisplay(null);
         setShuffling(false);
-        setBidAmount(selectedPlayer.base_price.toString());
+
+        // FIX 3: safe base_price usage
+        setBidAmount(String(selectedPlayer.base_price || ""));
       }
     }, 100);
   };
@@ -209,7 +258,7 @@ const Auction = () => {
         </div>
         <Button
           onClick={handleShufflePlayer}
-          disabled={shuffling || unsoldCount === 0}
+          // disabled={shuffling || unsoldCount === 0}
         >
           <Shuffle size={20} className="inline mr-2" />
           {shuffling ? "Shuffling..." : "Pick Random Player"}
@@ -278,7 +327,7 @@ const Auction = () => {
                     <option value="">Select Team</option>
                     {teams.map((team) => (
                       <option key={team.id} value={team.id}>
-                        {team.name} -{" "}
+                        {team.team_name} -{" "}
                         {formatCurrency(team.total_points - team.points_used)}{" "}
                         left
                       </option>
