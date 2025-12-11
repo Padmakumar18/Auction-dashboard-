@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import { Users, UserCircle, TrendingUp, DollarSign } from "lucide-react";
 import Card from "../components/Card";
 import Loader from "../components/Loader";

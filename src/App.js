@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -14,6 +14,7 @@ import Players from "./pages/Players";
 import Auction from "./pages/Auction";
 import Analytics from "./pages/Analytics";
 import Admin from "./pages/Admin";
+import Loader from "./components/Loader";
 import useStore from "./store/useStore";
 import { authAPI } from "./services/api";
 import { useRealtime } from "./hooks/useRealtime";
@@ -25,9 +26,10 @@ const ProtectedRoute = ({ children }) => {
 };
 
 function App() {
-  const { setUser } = useStore();
+  const { setUser, isAuthenticated } = useStore();
+  const [loading, setLoading] = useState(true);
 
-  // Initialize auth state
+  // Initialize auth state from localStorage
   useEffect(() => {
     const initAuth = async () => {
       try {
@@ -37,6 +39,8 @@ function App() {
         }
       } catch (error) {
         console.error("Auth initialization error:", error);
+      } finally {
+        setLoading(false);
       }
     };
     initAuth();
@@ -45,10 +49,15 @@ function App() {
   // Enable realtime updates when authenticated
   useRealtime();
 
+  // Show loader while checking authentication
+  if (loading) {
+    return <Loader fullScreen />;
+  }
+
   return (
     <Router>
       <Toaster
-        position="top-center"
+        position="top-right"
         reverseOrder={false}
         toastOptions={{
           duration: 4000,

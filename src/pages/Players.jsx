@@ -22,7 +22,6 @@ const Players = () => {
     role: "",
     base_price: "",
   });
-  const [errors, setErrors] = useState([]);
   const [filterRole, setFilterRole] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
 
@@ -57,7 +56,6 @@ const Players = () => {
       setEditingPlayer(null);
       setFormData({ name: "", role: "", base_price: "" });
     }
-    setErrors([]);
     setIsModalOpen(true);
   };
 
@@ -65,7 +63,6 @@ const Players = () => {
     setIsModalOpen(false);
     setEditingPlayer(null);
     setFormData({ name: "", role: "", base_price: "" });
-    setErrors([]);
   };
 
   const handleSubmit = async (e) => {
@@ -78,7 +75,7 @@ const Players = () => {
     });
 
     if (validationErrors.length > 0) {
-      setErrors(validationErrors);
+      validationErrors.forEach((error) => toast.error(error));
       return;
     }
 
@@ -101,9 +98,7 @@ const Players = () => {
 
       handleCloseModal();
     } catch (error) {
-      const errorMessage = error.message || "Failed to save player";
-      setErrors([errorMessage]);
-      toast.error(errorMessage);
+      toast.error(error.message || "Failed to save player");
     }
   };
 
@@ -282,16 +277,6 @@ const Players = () => {
             placeholder="Enter base price"
             required
           />
-
-          {errors.length > 0 && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-              {errors.map((error, index) => (
-                <p key={index} className="text-red-600 text-sm">
-                  {error}
-                </p>
-              ))}
-            </div>
-          )}
 
           <div className="flex gap-3 justify-end">
             <Button variant="outline" onClick={handleCloseModal} type="button">

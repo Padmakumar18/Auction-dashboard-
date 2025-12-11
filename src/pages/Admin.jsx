@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import toast from "react-hot-toast";
 import { RefreshCw, Lock, Unlock, Download, AlertTriangle } from "lucide-react";
 import Card from "../components/Card";
 import Button from "../components/Button";

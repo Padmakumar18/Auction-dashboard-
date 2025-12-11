@@ -1,4 +1,3 @@
-import React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Home,
@@ -14,7 +13,7 @@ import useStore from "../store/useStore";
 const Layout = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { isAuthenticated, logout } = useStore();
+  const { isAuthenticated, user, logout } = useStore();
 
   const handleLogout = () => {
     logout();
@@ -63,7 +62,16 @@ const Layout = ({ children }) => {
           })}
         </nav>
 
-        <div className="absolute bottom-0 left-0 right-0 p-4">
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t">
+          {user && (
+            <div className="mb-3 px-4 py-2 bg-blue-50 rounded-lg">
+              <p className="text-xs text-gray-600">Logged in as</p>
+              <p className="text-sm font-semibold text-gray-900 truncate">
+                {user.full_name || user.email}
+              </p>
+              <p className="text-xs text-blue-600 capitalize">{user.role}</p>
+            </div>
+          )}
           <button
             onClick={handleLogout}
             className="flex items-center gap-3 px-4 py-3 w-full text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"

@@ -16,7 +16,6 @@ const Teams = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTeam, setEditingTeam] = useState(null);
   const [formData, setFormData] = useState({ name: "", total_points: "" });
-  const [errors, setErrors] = useState([]);
 
   useEffect(() => {
     loadTeams();
@@ -27,6 +26,8 @@ const Teams = () => {
       setLoading(true);
       const data = await teamsAPI.getAll();
       setTeams(data);
+      console.log("Teams");
+      console.log(teams);
     } catch (error) {
       console.error("Error loading teams:", error);
       toast.error("Failed to load teams");
@@ -43,7 +44,6 @@ const Teams = () => {
       setEditingTeam(null);
       setFormData({ name: "", total_points: "" });
     }
-    setErrors([]);
     setIsModalOpen(true);
   };
 
@@ -51,7 +51,6 @@ const Teams = () => {
     setIsModalOpen(false);
     setEditingTeam(null);
     setFormData({ name: "", total_points: "" });
-    setErrors([]);
   };
 
   const handleSubmit = async (e) => {
@@ -63,7 +62,7 @@ const Teams = () => {
     });
 
     if (validationErrors.length > 0) {
-      setErrors(validationErrors);
+      validationErrors.forEach((error) => toast.error(error));
       return;
     }
 
@@ -85,9 +84,7 @@ const Teams = () => {
 
       handleCloseModal();
     } catch (error) {
-      const errorMessage = error.message || "Failed to save team";
-      setErrors([errorMessage]);
-      toast.error(errorMessage);
+      toast.error(error.message || "Failed to save team");
     }
   };
 
@@ -123,7 +120,9 @@ const Teams = () => {
           return (
             <Card key={team.id}>
               <div className="flex justify-between items-start mb-4">
-                <h3 className="text-xl font-bold text-gray-900">{team.name}</h3>
+                <h3 className="text-xl font-bold text-gray-900">
+                  {team.team_name}
+                </h3>
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleOpenModal(team)}
@@ -202,16 +201,6 @@ const Teams = () => {
             placeholder="Enter total points"
             required
           />
-
-          {errors.length > 0 && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-              {errors.map((error, index) => (
-                <p key={index} className="text-red-600 text-sm">
-                  {error}
-                </p>
-              ))}
-            </div>
-          )}
 
           <div className="flex gap-3 justify-end">
             <Button variant="outline" onClick={handleCloseModal} type="button">

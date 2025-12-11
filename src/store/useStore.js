@@ -6,7 +6,15 @@ const useStore = create((set, get) => ({
   user: null,
   isAuthenticated: false,
   setUser: (user) => set({ user, isAuthenticated: !!user }),
-  logout: () => set({ user: null, isAuthenticated: false }),
+  logout: () => {
+    // Clear user state
+    set({ user: null, isAuthenticated: false });
+
+    // Clear localStorage
+    localStorage.removeItem("admin_user");
+    localStorage.removeItem("saved_email");
+    localStorage.removeItem("saved_password");
+  },
 
   // Teams state
   teams: [],

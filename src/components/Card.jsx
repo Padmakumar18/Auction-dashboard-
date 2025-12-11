@@ -1,5 +1,3 @@
-import React from "react";
-
 const Card = ({ children, className = "", hover = false, onClick }) => {
   const hoverStyles = hover
     ? "hover:shadow-lg hover:-translate-y-1 cursor-pointer"

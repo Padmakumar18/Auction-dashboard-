@@ -1,5 +1,3 @@
-import React from "react";
-
 const Table = ({ columns, data, onRowClick }) => {
   return (
     <div className="overflow-x-auto">

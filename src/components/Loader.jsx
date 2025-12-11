@@ -1,5 +1,3 @@
-import React from "react";
-
 const Loader = ({ size = "md", fullScreen = false }) => {
   const sizes = {
     sm: "w-6 h-6 border-2",
