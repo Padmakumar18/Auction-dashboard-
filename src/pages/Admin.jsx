@@ -22,6 +22,8 @@ const Admin = () => {
   const [loading, setLoading] = useState(false);
 
   const handleResetAuction = async () => {
+    const loadingToast = toast.loading("Resetting auction...");
+
     try {
       setLoading(true);
 

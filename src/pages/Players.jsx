@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import { Plus, Upload, Edit2, Trash2, Filter } from "lucide-react";
 import Button from "../components/Button";
 import Modal from "../components/Modal";
@@ -38,6 +39,7 @@ const Players = () => {
       setPlayers(data);
     } catch (error) {
       console.error("Error loading players:", error);
+      toast.error("Failed to load players");
     } finally {
       setLoading(false);
     }
@@ -90,14 +92,18 @@ const Players = () => {
       if (editingPlayer) {
         const updated = await playersAPI.update(editingPlayer.id, playerData);
         updatePlayer(editingPlayer.id, updated);
+        toast.success("Player updated successfully!");
       } else {
         const created = await playersAPI.create(playerData);
         addPlayer(created);
+        toast.success("Player created successfully!");
       }
 
       handleCloseModal();
     } catch (error) {
-      setErrors([error.message || "Failed to save player"]);
+      const errorMessage = error.message || "Failed to save player";
+      setErrors([errorMessage]);
+      toast.error(errorMessage);
     }
   };
 
@@ -107,8 +113,9 @@ const Players = () => {
     try {
       await playersAPI.delete(id);
       setPlayers(players.filter((p) => p.id !== id));
+      toast.success("Player deleted successfully!");
     } catch (error) {
-      alert("Failed to delete player: " + error.message);
+      toast.error("Failed to delete player: " + error.message);
     }
   };
 
@@ -116,14 +123,20 @@ const Players = () => {
     const file = e.target.files[0];
     if (!file) return;
 
+    const loadingToast = toast.loading("Uploading players...");
+
     try {
       const parsedPlayers = await parseCSV(file);
       const created = await playersAPI.bulkCreate(parsedPlayers);
       setPlayers([...players, ...created]);
       setIsUploadModalOpen(false);
-      alert(`Successfully uploaded ${created.length} players`);
+      toast.success(`Successfully uploaded ${created.length} players!`, {
+        id: loadingToast,
+      });
     } catch (error) {
-      alert("Failed to upload CSV: " + error.message);
+      toast.error("Failed to upload CSV: " + error.message, {
+        id: loadingToast,
+      });
     }
   };
 

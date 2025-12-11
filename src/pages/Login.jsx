@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import { Lock } from "lucide-react";
 import Button from "../components/Button";
 import Input from "../components/Input";
@@ -22,9 +23,12 @@ const Login = () => {
     try {
       const data = await authAPI.login(email, password);
       setUser(data.user);
+      toast.success("Login successful!");
       navigate("/");
     } catch (err) {
-      setError(err.message || "Invalid credentials");
+      const errorMessage = err.message || "Invalid credentials";
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

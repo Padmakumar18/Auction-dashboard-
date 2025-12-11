@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import { Plus, Edit2, Trash2 } from "lucide-react";
 import Card from "../components/Card";
 import Button from "../components/Button";
@@ -28,6 +29,7 @@ const Teams = () => {
       setTeams(data);
     } catch (error) {
       console.error("Error loading teams:", error);
+      toast.error("Failed to load teams");
     } finally {
       setLoading(false);
     }
@@ -74,14 +76,18 @@ const Teams = () => {
       if (editingTeam) {
         const updated = await teamsAPI.update(editingTeam.id, teamData);
         updateTeam(editingTeam.id, updated);
+        toast.success("Team updated successfully!");
       } else {
         const created = await teamsAPI.create(teamData);
         addTeam(created);
+        toast.success("Team created successfully!");
       }
 
       handleCloseModal();
     } catch (error) {
-      setErrors([error.message || "Failed to save team"]);
+      const errorMessage = error.message || "Failed to save team";
+      setErrors([errorMessage]);
+      toast.error(errorMessage);
     }
   };
 
@@ -91,8 +97,9 @@ const Teams = () => {
     try {
       await teamsAPI.delete(id);
       setTeams(teams.filter((t) => t.id !== id));
+      toast.success("Team deleted successfully!");
     } catch (error) {
-      alert("Failed to delete team: " + error.message);
+      toast.error("Failed to delete team: " + error.message);
     }
   };
 
