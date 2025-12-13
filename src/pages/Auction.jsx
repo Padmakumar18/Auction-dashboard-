@@ -181,6 +181,11 @@ const Auction = () => {
       return;
     }
 
+    // console.log("teams");
+    // console.log(teams);
+
+    // console.log("First passed");
+
     try {
       const team = teams.find((t) => t.id === currentBid.team_id);
 
@@ -188,13 +193,17 @@ const Auction = () => {
       await playersAPI.update(currentPlayer.id, {
         status: "sold",
         sold_price: currentBid.amount,
-        team_id: team.id,
+        sold_to: team.id,
       });
+
+      // console.log("First passed");
 
       // Update team points
       await teamsAPI.update(team.id, {
         points_used: team.points_used + currentBid.amount,
       });
+
+      // console.log("Second passed");
 
       // Create final log
       await auctionLogsAPI.create({
@@ -204,12 +213,16 @@ const Auction = () => {
         action: "sold",
       });
 
+      // console.log("Third passed");
+
       // Update local state
       updatePlayer(currentPlayer.id, {
         status: "sold",
         sold_price: currentBid.amount,
         team_id: team.id,
       });
+
+      // console.log("Fourth passed");
 
       updateTeam(team.id, {
         points_used: team.points_used + currentBid.amount,

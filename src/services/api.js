@@ -56,7 +56,7 @@ export const playersAPI = {
       if (teamIds.length > 0) {
         const { data: teams, error: teamsError } = await supabase
           .from("teams")
-          .select("id, name")
+          .select("id, team_name")
           .in("id", teamIds);
 
         if (!teamsError && teams) {
@@ -127,7 +127,7 @@ export const playersAPI = {
     // Fetch team name for response enrichment
     const { data: teamData, error: teamErr } = await supabase
       .from("teams")
-      .select("id, name")
+      .select("id, team_name")
       .eq("id", teamId)
       .single();
 
@@ -148,7 +148,7 @@ export const auctionLogsAPI = {
     const { data, error } = await supabase
       .from("auction_logs")
       .select("*")
-      .order("created_at", { ascending: false });
+      .order("timestamp", { ascending: false });
 
     if (error) throw error;
 
@@ -171,7 +171,7 @@ export const auctionLogsAPI = {
 
       if (teamIds.length > 0) {
         promises.push(
-          supabase.from("teams").select("id, name").in("id", teamIds)
+          supabase.from("teams").select("id, team_name").in("id", teamIds)
         );
       }
 
@@ -201,6 +201,8 @@ export const auctionLogsAPI = {
   },
 
   create: async (log) => {
+    console.log("log");
+    console.log(log);
     const { data, error } = await supabase
       .from("auction_logs")
       .insert([log])
