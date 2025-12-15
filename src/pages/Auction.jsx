@@ -12,6 +12,7 @@ import {
   canTeamAffordBid,
   calculateRecommendedBid,
   shuffleArray,
+  extractDriveFileId,
 } from "../utils/helpers";
 
 const Auction = () => {
@@ -47,11 +48,11 @@ const Auction = () => {
         teamsAPI.getAll(),
         playersAPI.getAll(),
       ]);
+
+      console.log("playersData");
+      console.log(playersData);
       setTeams(teamsData);
       setPlayers(playersData);
-
-      console.log("players");
-      console.log(players);
     } catch (error) {
       console.error("Error loading data:", error);
     } finally {
@@ -59,42 +60,13 @@ const Auction = () => {
     }
   };
 
-  // const handleShufflePlayer = async () => {
-  //   const unsoldPlayers = players.filter(
-  //     (p) => p.status === "unsold" || p.status === "available"
-  //   );
-  //   if (unsoldPlayers.length === 0) {
-  //     alert("No unsold players available!");
-  //     return;
-  //   }
-
-  //   setShuffling(true);
-  //   const shuffled = shuffleArray(unsoldPlayers);
-
-  //   // Animate shuffle
-  //   let count = 0;
-  //   const interval = setInterval(() => {
-  //     setShuffleDisplay(shuffled[count % shuffled.length]);
-  //     count++;
-
-  //     if (count >= 20) {
-  //       clearInterval(interval);
-  //       const selectedPlayer = getRandomPlayer(players);
-  //       setCurrentPlayer(selectedPlayer);
-  //       setShuffleDisplay(null);
-  //       setShuffling(false);
-  //       setBidAmount(selectedPlayer.base_price.toString());
-  //     }
-  //   }, 100);
-  // };
-
   const handleShufflePlayer = async () => {
     const unsoldPlayers = players.filter(
       (p) => p.status === "unsold" || p.status === "available"
     );
 
     if (unsoldPlayers.length === 0) {
-      alert("No unsold players available!");
+      toast("No unsold players available!");
       return;
     }
 
@@ -134,7 +106,7 @@ const Auction = () => {
 
   const handlePlaceBid = async () => {
     if (!selectedTeam || !bidAmount || !currentPlayer) {
-      alert("Please select a team and enter bid amount");
+      toast.error("Please select a team and enter bid amount");
       return;
     }
 
@@ -142,12 +114,12 @@ const Auction = () => {
     const amount = parseInt(bidAmount);
 
     if (amount < currentPlayer.base_price) {
-      alert("Bid amount must be at least the base price");
+      toast.error("Bid amount must be at least the base price");
       return;
     }
 
     if (!canTeamAffordBid(team, amount)) {
-      alert("Team does not have enough points!");
+      toast.error("Team does not have enough points!");
       return;
     }
 
@@ -171,15 +143,20 @@ const Auction = () => {
         created_at: new Date().toISOString(),
       });
     } catch (error) {
-      alert("Failed to place bid: " + error.message);
+      toast.error("Failed to place bid: " + error.message);
     }
   };
 
   const handleFinalizeSale = async () => {
     if (!currentBid || !currentPlayer) {
-      alert("No active bid to finalize");
+      toast.error("No active bid to finalize");
       return;
     }
+
+    // console.log("teams");
+    // console.log(teams);
+
+    // console.log("First passed");
 
     try {
       const team = teams.find((t) => t.id === currentBid.team_id);
@@ -188,13 +165,17 @@ const Auction = () => {
       await playersAPI.update(currentPlayer.id, {
         status: "sold",
         sold_price: currentBid.amount,
-        team_id: team.id,
+        sold_to: team.id,
       });
+
+      // console.log("First passed");
 
       // Update team points
       await teamsAPI.update(team.id, {
         points_used: team.points_used + currentBid.amount,
       });
+
+      // console.log("Second passed");
 
       // Create final log
       await auctionLogsAPI.create({
@@ -204,12 +185,16 @@ const Auction = () => {
         action: "sold",
       });
 
+      // console.log("Third passed");
+
       // Update local state
       updatePlayer(currentPlayer.id, {
         status: "sold",
         sold_price: currentBid.amount,
         team_id: team.id,
       });
+
+      // console.log("Fourth passed");
 
       updateTeam(team.id, {
         points_used: team.points_used + currentBid.amount,
@@ -221,9 +206,9 @@ const Auction = () => {
       setBidAmount("");
       setSelectedTeam("");
 
-      alert("Player sold successfully!");
+      toast.success("Player sold successfully!");
     } catch (error) {
-      alert("Failed to finalize sale: " + error.message);
+      toast.error("Failed to finalize sale: " + error.message);
     }
   };
 
@@ -239,9 +224,9 @@ const Auction = () => {
       setBidAmount("");
       setSelectedTeam("");
 
-      alert("Player marked as unsold");
+      toast("Player marked as unsold");
     } catch (error) {
-      alert("Failed to mark unsold: " + error.message);
+      toast.error("Failed to mark unsold: " + error.message);
     }
   };
 
@@ -284,23 +269,83 @@ const Auction = () => {
               </div>
             ) : currentPlayer ? (
               <div>
-                <div className="text-center mb-8">
-                  <div className="bg-blue-100 w-32 h-32 rounded-full mx-auto mb-4 flex items-center justify-center">
-                    <span className="text-4xl font-bold text-blue-600">
-                      {currentPlayer.name.charAt(0)}
-                    </span>
+                <div className="flex flex-col md:flex-row items-center md:items-start gap-10 mb-10">
+                  {/* LEFT: Player Photo */}
+                  <div className="flex flex-col items-center">
+                    <div className="bg-blue-100 w-72 h-72 md:w-80 md:h-80 rounded-2xl overflow-hidden flex items-center justify-center shadow-lg relative">
+                      {currentPlayer.player_photo ? (
+                        <img
+                          src={`https://drive.google.com/uc?export=view&id=${extractDriveFileId(
+                            currentPlayer.player_photo
+                          )}`}
+                          // src={`https://drive.google.com/uc?export=view&id=${extractDriveFileId(
+                          //   currentPlayer.player_photo
+                          // )}`}
+                          alt={currentPlayer.name}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <span
+                          className={`text-7xl font-bold text-blue-600 ${
+                            currentPlayer.player_photo ? "hidden" : "block"
+                          }`}
+                        >
+                          {currentPlayer.name.charAt(0)}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <h2 className="text-4xl font-bold text-gray-900 mb-2">
-                    {currentPlayer.name}
-                  </h2>
-                  <p className="text-xl text-gray-600 mb-4">
-                    {currentPlayer.role}
-                  </p>
-                  <div className="inline-block bg-green-100 px-6 py-2 rounded-full">
-                    <span className="text-sm text-gray-600">Base Price: </span>
-                    <span className="text-lg font-bold text-green-700">
-                      {formatCurrency(currentPlayer.base_price)}
-                    </span>
+
+                  {/* RIGHT: Player Details */}
+                  <div className="flex-1">
+                    <h2 className="text-5xl font-bold text-gray-900 mb-3">
+                      {currentPlayer.name}
+                    </h2>
+
+                    <p className="text-2xl text-gray-600 mb-6">
+                      {currentPlayer.role}
+                    </p>
+
+                    <div className="space-y-3 text-gray-700 text-lg">
+                      {currentPlayer.age && (
+                        <p>
+                          <span className="font-semibold">Age:</span>{" "}
+                          {currentPlayer.age}
+                        </p>
+                      )}
+
+                      {currentPlayer.country && (
+                        <p>
+                          <span className="font-semibold">Country:</span>{" "}
+                          {currentPlayer.country}
+                        </p>
+                      )}
+
+                      {currentPlayer.batting_style && (
+                        <p>
+                          <span className="font-semibold">Batting Style:</span>{" "}
+                          {currentPlayer.batting_style}
+                        </p>
+                      )}
+
+                      {currentPlayer.bowling_style && (
+                        <p>
+                          <span className="font-semibold">Bowling Style:</span>{" "}
+                          {currentPlayer.bowling_style}
+                        </p>
+                      )}
+
+                      <div className="mt-4">
+                        <span className="text-lg text-gray-600">
+                          Base Price:{" "}
+                        </span>
+                        <span className="text-2xl font-bold text-green-700">
+                          {formatCurrency(currentPlayer.base_price)}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -313,29 +358,65 @@ const Auction = () => {
                       </span>
                       <span className="text-gray-600 ml-2">
                         by{" "}
-                        {teams.find((t) => t.id === currentBid.team_id)?.name}
+                        {
+                          teams.find((t) => t.id === currentBid.team_id)
+                            ?.team_name
+                        }
                       </span>
                     </p>
                   </div>
                 )}
 
                 <div className="space-y-4">
-                  <select
-                    value={selectedTeam}
-                    onChange={(e) => setSelectedTeam(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    disabled={isAuctionLocked}
-                  >
-                    <option value="">Select Team</option>
-                    {teams.map((team) => (
-                      <option key={team.id} value={team.id}>
-                        {team.team_name} -{" "}
-                        {formatCurrency(team.total_points - team.points_used)}{" "}
-                        left
-                      </option>
-                    ))}
-                  </select>
+                  {/* Team Radio Buttons */}
+                  <div>
+                    <p className="text-sm font-semibold text-gray-700 mb-2">
+                      Select Team
+                    </p>
 
+                    <div className="flex flex-wrap gap-3">
+                      {teams.map((team) => {
+                        const pointsLeft = team.total_points - team.points_used;
+                        const isSelected = selectedTeam === team.id;
+
+                        return (
+                          <label
+                            key={team.id}
+                            className={`flex items-center gap-2 px-4 py-2 border rounded-lg cursor-pointer transition
+                            ${
+                              isSelected
+                                ? "border-blue-600 bg-blue-50"
+                                : "border-gray-300 hover:bg-gray-100"
+                            }`}
+                          >
+                            <input
+                              type="radio"
+                              name="team"
+                              value={team.id}
+                              checked={isSelected}
+                              onChange={() => setSelectedTeam(team.id)}
+                              disabled={
+                                isAuctionLocked ||
+                                team.players_count == team.max_player
+                              }
+                              className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                            />
+
+                            <div>
+                              <p className="font-semibold text-gray-900 text-sm">
+                                {team.team_name}
+                              </p>
+                              <p className="text-xs text-green-700 font-medium">
+                                {formatCurrency(pointsLeft)} left
+                              </p>
+                            </div>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Bid Input */}
                   <input
                     type="number"
                     value={bidAmount}
@@ -345,6 +426,7 @@ const Auction = () => {
                     disabled={isAuctionLocked}
                   />
 
+                  {/* Action Buttons */}
                   <div className="flex gap-3">
                     <Button
                       onClick={handlePlaceBid}
@@ -354,6 +436,7 @@ const Auction = () => {
                       <Gavel size={20} className="inline mr-2" />
                       Place Bid
                     </Button>
+
                     <Button
                       onClick={handleFinalizeSale}
                       variant="secondary"
@@ -363,6 +446,7 @@ const Auction = () => {
                       <Check size={20} className="inline mr-2" />
                       Finalize Sale
                     </Button>
+
                     <Button
                       onClick={handleMarkUnsold}
                       variant="danger"
@@ -410,7 +494,11 @@ const Auction = () => {
                       </span>
                     </div>
                     <div className="text-xs text-gray-600">
-                      <p>Recommended max: {formatCurrency(recommendedBid)}</p>
+                      <p>Recommended max : {formatCurrency(recommendedBid)}</p>
+                      <p>Total players : {team.players_count}</p>
+                      <p>Points left : {team.points_left}</p>
+                      {/* <p>Recommended max : {formatCurrency(recommendedBid)}</p>
+                      <p>Recommended max : {formatCurrency(recommendedBid)}</p> */}
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
                       <div

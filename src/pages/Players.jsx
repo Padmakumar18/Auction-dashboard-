@@ -8,11 +8,12 @@ import Select from "../components/Select";
 import Table from "../components/Table";
 import Loader from "../components/Loader";
 import useStore from "../store/useStore";
-import { playersAPI } from "../services/api";
+import { playersAPI, teamsAPI } from "../services/api";
 import { formatCurrency, validatePlayer, parseCSV } from "../utils/helpers";
 
 const Players = () => {
-  const { players, setPlayers, addPlayer, updatePlayer } = useStore();
+  const { teams, setTeams, players, setPlayers, addPlayer, updatePlayer } =
+    useStore();
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -28,14 +29,16 @@ const Players = () => {
   const roles = ["Batsman", "Bowler", "All-Rounder", "Wicket-Keeper"];
 
   useEffect(() => {
-    loadPlayers();
+    loadData();
   }, []);
 
-  const loadPlayers = async () => {
+  const loadData = async () => {
     try {
       setLoading(true);
-      const data = await playersAPI.getAll();
-      setPlayers(data);
+      const getAllPlayers = await playersAPI.getAll();
+      const getAllTeams = await teamsAPI.getAll();
+      setTeams(getAllTeams);
+      setPlayers(getAllPlayers);
     } catch (error) {
       console.error("Error loading players:", error);
       toast.error("Failed to load players");
@@ -141,12 +144,20 @@ const Players = () => {
     return true;
   });
 
+  // console.log(
+  //   teams.find((t) => t.id === "2a810c8d-6721-4653-8344-90b1f29878e0").team_name
+  // );
+
   const columns = [
     { header: "Name", accessor: "name" },
     { header: "Role", accessor: "role" },
     {
       header: "Base Price",
       render: (row) => formatCurrency(row.base_price),
+    },
+    {
+      header: "Sold Price",
+      render: (row) => formatCurrency(row.sold_price),
     },
     {
       header: "Status",
@@ -164,7 +175,8 @@ const Players = () => {
     },
     {
       header: "Team",
-      render: (row) => row.teams?.name || "-",
+      render: (row) =>
+        teams.find((t) => t.id === row.sold_to)?.team_name || "-",
     },
     {
       header: "Actions",

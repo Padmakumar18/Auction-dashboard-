@@ -7,15 +7,22 @@ import Modal from "../components/Modal";
 import Input from "../components/Input";
 import Loader from "../components/Loader";
 import useStore from "../store/useStore";
-import { teamsAPI } from "../services/api";
+import { teamsAPI, playersAPI } from "../services/api";
 import { formatCurrency, validateTeam } from "../utils/helpers";
 
 const Teams = () => {
   const { teams, setTeams, addTeam, updateTeam } = useStore();
   const [loading, setLoading] = useState(true);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTeam, setEditingTeam] = useState(null);
+
   const [formData, setFormData] = useState({ name: "", total_points: "" });
+
+  // PLAYERS MODAL
+  const [isPlayersModalOpen, setIsPlayersModalOpen] = useState(false);
+  const [selectedTeamPlayers, setSelectedTeamPlayers] = useState([]);
+  const [selectedTeamName, setSelectedTeamName] = useState("");
 
   useEffect(() => {
     loadTeams();
@@ -26,9 +33,6 @@ const Teams = () => {
       setLoading(true);
       const data = await teamsAPI.getAll();
       setTeams(data);
-
-      // console.log("Teams");
-      // console.log(teams);
     } catch (error) {
       console.error("Error loading teams:", error);
       toast.error("Failed to load teams");
@@ -101,6 +105,28 @@ const Teams = () => {
     }
   };
 
+  // ---------------------------
+  // VIEW ALL PLAYERS FEATURE
+  // ---------------------------
+  const handleViewPlayers = async (team) => {
+    try {
+      const players = await playersAPI.getByTeam(team.id);
+      const sortedPlayers = players.sort((a, b) => b.base_price - a.base_price);
+
+      setSelectedTeamPlayers(sortedPlayers);
+      setSelectedTeamName(team.team_name);
+
+      setIsPlayersModalOpen(true);
+    } catch (error) {
+      toast.error("Failed to load players");
+    }
+  };
+
+  const closePlayersModal = () => {
+    setIsPlayersModalOpen(false);
+    setSelectedTeamPlayers([]);
+  };
+
   if (loading) return <Loader fullScreen />;
 
   return (
@@ -124,6 +150,7 @@ const Teams = () => {
                 <h3 className="text-xl font-bold text-gray-900">
                   {team.team_name}
                 </h3>
+
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleOpenModal(team)}
@@ -147,12 +174,14 @@ const Teams = () => {
                     {formatCurrency(team.total_points)}
                   </span>
                 </div>
+
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Points Used:</span>
                   <span className="font-semibold">
                     {formatCurrency(team.points_used)}
                   </span>
                 </div>
+
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Points Left:</span>
                   <span className="font-semibold text-green-600">
@@ -171,13 +200,21 @@ const Teams = () => {
                     {percentage.toFixed(1)}% used
                   </p>
                 </div>
+                <div>
+                  <Button
+                    variant="outline"
+                    onClick={() => handleViewPlayers(team)}
+                  >
+                    View Players
+                  </Button>
+                </div>
               </div>
             </Card>
           );
         })}
       </div>
 
-      {/* Add/Edit Modal */}
+      {/* Add / Edit Team Modal */}
       <Modal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
@@ -210,6 +247,35 @@ const Teams = () => {
             <Button type="submit">{editingTeam ? "Update" : "Create"}</Button>
           </div>
         </form>
+      </Modal>
+
+      {/* PLAYERS MODAL */}
+      <Modal
+        isOpen={isPlayersModalOpen}
+        onClose={closePlayersModal}
+        title={`Players - ${selectedTeamName}`}
+      >
+        {selectedTeamPlayers && selectedTeamPlayers.length !== 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {selectedTeamPlayers.map((player) => (
+              <div
+                key={player.id}
+                className="border rounded-lg p-3 shadow-sm bg-white"
+              >
+                <p className="font-bold text-gray-900">{player.name}</p>
+                <p className="text-sm text-gray-600">Role: {player.role}</p>
+                <p className="text-sm font-semibold text-blue-700">
+                  Base Price: {formatCurrency(player.base_price)}
+                </p>
+                <p className="text-sm font-semibold text-green-700">
+                  Base Price: {formatCurrency(player.sold_price)}
+                </p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center">No players </div>
+        )}
       </Modal>
     </div>
   );

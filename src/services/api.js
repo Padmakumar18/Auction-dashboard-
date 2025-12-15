@@ -48,7 +48,6 @@ export const playersAPI = {
 
     if (error) throw error;
 
-    // If players have team_id, fetch team names separately
     if (data && data.length > 0) {
       const teamIds = [
         ...new Set(data.filter((p) => p.team_id).map((p) => p.team_id)),
@@ -57,11 +56,10 @@ export const playersAPI = {
       if (teamIds.length > 0) {
         const { data: teams, error: teamsError } = await supabase
           .from("teams")
-          .select("id, name")
+          .select("id, team_name")
           .in("id", teamIds);
 
         if (!teamsError && teams) {
-          // Map team names to players
           const teamMap = teams.reduce((acc, team) => {
             acc[team.id] = team;
             return acc;
@@ -112,6 +110,33 @@ export const playersAPI = {
     const { error } = await supabase.from("players").delete().eq("id", id);
     if (error) throw error;
   },
+
+  // ⭐ ADD THIS FUNCTION
+  getByTeam: async (teamId) => {
+    const { data, error } = await supabase
+      .from("players")
+      .select("*")
+      .eq("sold_to", teamId)
+      .order("created_at", { ascending: true });
+
+    if (error) throw error;
+
+    // Fetch team name for response enrichment
+    const { data: teamData, error: teamErr } = await supabase
+      .from("teams")
+      .select("id, team_name")
+      .eq("id", teamId)
+      .single();
+
+    if (!teamErr && teamData) {
+      return data.map((player) => ({
+        ...player,
+        teams: teamData,
+      }));
+    }
+
+    return data;
+  },
 };
 
 // Auction Logs API
@@ -120,7 +145,7 @@ export const auctionLogsAPI = {
     const { data, error } = await supabase
       .from("auction_logs")
       .select("*")
-      .order("created_at", { ascending: false });
+      .order("timestamp", { ascending: false });
 
     if (error) throw error;
 
@@ -143,7 +168,7 @@ export const auctionLogsAPI = {
 
       if (teamIds.length > 0) {
         promises.push(
-          supabase.from("teams").select("id, name").in("id", teamIds)
+          supabase.from("teams").select("id, team_name").in("id", teamIds)
         );
       }
 
@@ -202,9 +227,6 @@ export const authAPI = {
         .eq("email", email)
         .eq("is_active", true)
         .maybeSingle(); // Use maybeSingle instead of single to avoid errors
-
-      console.log("users");
-      console.log(users);
 
       // Check for errors
       if (error) {

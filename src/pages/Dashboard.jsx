@@ -27,6 +27,8 @@ const Dashboard = () => {
       setTeams(teamsData);
       setPlayers(playersData);
       setAuctionLogs(logsData);
+      console.log("auctionLogs");
+      console.log(auctionLogs);
     } catch (error) {
       console.error("Error loading data:", error);
     } finally {
@@ -169,7 +171,7 @@ const Dashboard = () => {
                       {log.players?.name || "Unknown Player"}
                     </p>
                     <p className="text-sm text-gray-600">
-                      {log.teams?.name || "Unknown Team"} - {log.action}
+                      {log.teams?.team_name || "Unknown Team"} - {log.action}
                     </p>
                   </div>
                   <div className="text-right">
@@ -177,7 +179,7 @@ const Dashboard = () => {
                       {formatCurrency(log.bid_amount)}
                     </p>
                     <p className="text-xs text-gray-500">
-                      {new Date(log.created_at).toLocaleTimeString()}
+                      {new Date(log.timestamp).toLocaleTimeString()}
                     </p>
                   </div>
                 </div>

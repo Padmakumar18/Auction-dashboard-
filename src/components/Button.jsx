@@ -19,7 +19,7 @@ const Button = ({
     danger:
       "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 disabled:bg-red-300",
     outline:
-      "bg-white text-gray-700 border-2 border-gray-300 hover:bg-gray-50 focus:ring-gray-500 disabled:bg-gray-100",
+      "bg-white text-gray-700 border-2 border-orange-300 hover:bg-gray-50 focus:ring-gray-500 disabled:bg-gray-100",
   };
 
   const sizes = {
