@@ -6,6 +6,7 @@ import Button from "../components/Button";
 import Input from "../components/Input";
 import useStore from "../store/useStore";
 import { authAPI } from "../services/api";
+import { hashMyPassword } from "../utils/helpers";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -30,6 +31,9 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    // setPassword(hashMyPassword(password));
+    // console.log("password");
+    // console.log(hashMyPassword(password));
 
     try {
       const data = await authAPI.login(email, password);

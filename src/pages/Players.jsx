@@ -106,16 +106,57 @@ const Players = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this player?")) return;
+    toast(
+      (t) => (
+        <div className="flex flex-col gap-3">
+          <p className="text-sm font-medium text-white-900">
+            Are you sure you want to delete this player?
+          </p>
 
-    try {
-      await playersAPI.delete(id);
-      setPlayers(players.filter((p) => p.id !== id));
-      toast.success("Player deleted successfully!");
-    } catch (error) {
-      toast.error("Failed to delete player: " + error.message);
-    }
+          <div className="flex justify-end gap-2">
+            <button
+              className="px-3 py-1 text-sm bg-gray-200 text-black rounded"
+              onClick={() => toast.dismiss(t.id)}
+            >
+              Cancel
+            </button>
+
+            <button
+              className="px-3 py-1 text-sm bg-red-600 text-white rounded"
+              onClick={async () => {
+                toast.dismiss(t.id);
+
+                try {
+                  await playersAPI.delete(id);
+                  setPlayers(players.filter((p) => p.id !== id));
+                  toast.success("Player deleted successfully!");
+                } catch (error) {
+                  toast.error(
+                    "Failed to delete player: " + (error.message || "")
+                  );
+                }
+              }}
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      ),
+      { duration: Infinity }
+    );
   };
+
+  // const handleDelete = async (id) => {
+  //   if (!window.confirm("Are you sure you want to delete this player?")) return;
+
+  //   try {
+  //     await playersAPI.delete(id);
+  //     setPlayers(players.filter((p) => p.id !== id));
+  //     toast.success("Player deleted successfully!");
+  //   } catch (error) {
+  //     toast.error("Failed to delete player: " + error.message);
+  //   }
+  // };
 
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
@@ -206,10 +247,10 @@ const Players = () => {
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Players Management</h1>
         <div className="flex gap-3">
-          <Button variant="outline" onClick={() => setIsUploadModalOpen(true)}>
+          {/* <Button variant="outline" onClick={() => setIsUploadModalOpen(true)}>
             <Upload size={20} className="inline mr-2" />
             Upload CSV
-          </Button>
+          </Button> */}
           <Button onClick={() => handleOpenModal()}>
             <Plus size={20} className="inline mr-2" />
             Add Player
@@ -250,12 +291,10 @@ const Players = () => {
         </div>
       </div>
 
-      {/* Players Table */}
       <div className="bg-white rounded-lg shadow-md">
         <Table columns={columns} data={filteredPlayers} />
       </div>
 
-      {/* Add/Edit Modal */}
       <Modal
         isOpen={isModalOpen}
         onClose={handleCloseModal}

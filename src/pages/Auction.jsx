@@ -278,9 +278,6 @@ const Auction = () => {
                           src={`https://drive.google.com/uc?export=view&id=${extractDriveFileId(
                             currentPlayer.player_photo
                           )}`}
-                          // src={`https://drive.google.com/uc?export=view&id=${extractDriveFileId(
-                          //   currentPlayer.player_photo
-                          // )}`}
                           alt={currentPlayer.name}
                           className="w-full h-full object-cover"
                           loading="lazy"

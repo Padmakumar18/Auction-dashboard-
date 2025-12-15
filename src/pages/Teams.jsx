@@ -7,11 +7,12 @@ import Modal from "../components/Modal";
 import Input from "../components/Input";
 import Loader from "../components/Loader";
 import useStore from "../store/useStore";
-import { teamsAPI, playersAPI } from "../services/api";
+import { teamsAPI, playersAPI, helperAPI } from "../services/api";
 import { formatCurrency, validateTeam } from "../utils/helpers";
 
 const Teams = () => {
   const { teams, setTeams, addTeam, updateTeam } = useStore();
+  const [helper, setHelper] = useState([]); // local helper state
   const [loading, setLoading] = useState(true);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -26,6 +27,7 @@ const Teams = () => {
 
   useEffect(() => {
     loadTeams();
+    loadHelper();
   }, []);
 
   const loadTeams = async () => {
@@ -41,10 +43,28 @@ const Teams = () => {
     }
   };
 
+  const loadHelper = async () => {
+    setLoading(true);
+    try {
+      const data = await helperAPI.getAll();
+      setHelper(data);
+      console.log("helper");
+      console.log(helper);
+    } catch (error) {
+      console.error("Helper load failed:", error);
+      toast.error("Failed to load helper");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleOpenModal = (team = null) => {
     if (team) {
       setEditingTeam(team);
-      setFormData({ name: team.name, total_points: team.total_points });
+      setFormData({
+        name: team.team_name,
+        total_points: team.total_points,
+      });
     } else {
       setEditingTeam(null);
       setFormData({ name: "", total_points: "" });
@@ -73,8 +93,13 @@ const Teams = () => {
 
     try {
       const teamData = {
-        name: formData.name,
-        total_points: parseInt(formData.total_points),
+        team_name: formData.name,
+        total_points: parseInt(helper[0].total_points),
+        points_used: 0,
+        points_left: parseInt(helper[0].total_points),
+        players_count: 0,
+        max_players: parseInt(helper[0].max_players),
+        balance_players_count: parseInt(helper[0].max_players),
       };
 
       if (editingTeam) {
@@ -93,16 +118,57 @@ const Teams = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this team?")) return;
+  // const handleDelete = async (id) => {
+  //   if (!window.confirm("Are you sure you want to delete this team?")) return;
 
-    try {
-      await teamsAPI.delete(id);
-      setTeams(teams.filter((t) => t.id !== id));
-      toast.success("Team deleted successfully!");
-    } catch (error) {
-      toast.error("Failed to delete team: " + error.message);
-    }
+  //   try {
+  //     await teamsAPI.delete(id);
+  //     setTeams(teams.filter((t) => t.id !== id));
+  //     toast.success("Team deleted successfully!");
+  //   } catch (error) {
+  //     toast.error("Failed to delete team: " + error.message);
+  //   }
+  // };
+
+  const handleDelete = async (id) => {
+    toast(
+      (t) => (
+        <div className="flex flex-col gap-3">
+          <p className="text-sm font-medium text-white-900">
+            Are you sure you want to delete this team?
+          </p>
+
+          <div className="flex justify-end gap-2">
+            <button
+              className="px-3 py-1 text-sm bg-gray-200 text-black rounded"
+              onClick={() => toast.dismiss(t.id)}
+            >
+              Cancel
+            </button>
+
+            <button
+              className="px-3 py-1 text-sm bg-red-600 text-white rounded"
+              onClick={async () => {
+                toast.dismiss(t.id);
+
+                try {
+                  await teamsAPI.delete(id);
+                  setTeams(teams.filter((t) => t.id !== id));
+                  toast.success("Team deleted successfully!");
+                } catch (error) {
+                  toast.error(
+                    "Failed to delete team: " + (error.message || "")
+                  );
+                }
+              }}
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      ),
+      { duration: Infinity }
+    );
   };
 
   // ---------------------------

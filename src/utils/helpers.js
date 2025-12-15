@@ -171,3 +171,13 @@ export const extractDriveFileId = (url) => {
 
   return match ? match[1] : null;
 };
+
+export const hashMyPassword = (password) => {
+  let hash = 0;
+
+  for (let i = 0; i < password.length; i++) {
+    hash = (hash * 31 + password.charCodeAt(i)) >>> 0;
+  }
+
+  return hash.toString();
+};

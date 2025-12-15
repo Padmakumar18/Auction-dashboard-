@@ -58,9 +58,9 @@ const Admin = () => {
       setAuctionLogs([]);
 
       setIsResetModalOpen(false);
-      alert("Auction reset successfully!");
+      toast("Auction reset successfully!");
     } catch (error) {
-      alert("Failed to reset auction: " + error.message);
+      toast("Failed to reset auction: " + error.message);
     } finally {
       setLoading(false);
     }
