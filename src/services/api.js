@@ -119,9 +119,6 @@ export const playersAPI = {
       .eq("sold_to", teamId)
       .order("created_at", { ascending: true });
 
-    console.log("data");
-    console.log(data);
-
     if (error) throw error;
 
     // Fetch team name for response enrichment
@@ -201,8 +198,6 @@ export const auctionLogsAPI = {
   },
 
   create: async (log) => {
-    console.log("log");
-    console.log(log);
     const { data, error } = await supabase
       .from("auction_logs")
       .insert([log])
@@ -232,9 +227,6 @@ export const authAPI = {
         .eq("email", email)
         .eq("is_active", true)
         .maybeSingle(); // Use maybeSingle instead of single to avoid errors
-
-      console.log("users");
-      console.log(users);
 
       // Check for errors
       if (error) {

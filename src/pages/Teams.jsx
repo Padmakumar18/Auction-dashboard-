@@ -109,14 +109,8 @@ const Teams = () => {
   // VIEW ALL PLAYERS FEATURE
   // ---------------------------
   const handleViewPlayers = async (team) => {
-    console.log("team");
-    console.log(team);
     try {
       const players = await playersAPI.getByTeam(team.id);
-
-      console.log("####players#####");
-      console.log(players);
-
       const sortedPlayers = players.sort((a, b) => b.base_price - a.base_price);
 
       setSelectedTeamPlayers(sortedPlayers);
@@ -269,9 +263,7 @@ const Teams = () => {
                 className="border rounded-lg p-3 shadow-sm bg-white"
               >
                 <p className="font-bold text-gray-900">{player.name}</p>
-                <p className="text-sm text-gray-600">
-                  Role: {player.player_role}
-                </p>
+                <p className="text-sm text-gray-600">Role: {player.role}</p>
                 <p className="text-sm font-semibold text-blue-700">
                   Base Price: {formatCurrency(player.base_price)}
                 </p>

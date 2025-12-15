@@ -144,3 +144,30 @@ export const validateTeam = (team) => {
   }
   return errors;
 };
+
+// export function extractDriveFileId(driveUrl) {
+//   if (!driveUrl || typeof driveUrl !== "string") return null;
+
+//   const patterns = [
+//     /\/file\/d\/([a-zA-Z0-9_-]+)/, // Standard share link
+//     /id=([a-zA-Z0-9_-]+)/, // uc?id= or open?id=
+//     /\/d\/([a-zA-Z0-9_-]+)/, // Alternate formats
+//   ];
+
+//   for (const pattern of patterns) {
+//     const match = driveUrl.match(pattern);
+//     if (match && match[1]) {
+//       return match[1];
+//     }
+//   }
+
+//   return null;
+// }
+
+export const extractDriveFileId = (url) => {
+  if (!url) return null;
+
+  const match = url.match(/(?:\/d\/|id=)([a-zA-Z0-9_-]{25,})/);
+
+  return match ? match[1] : null;
+};

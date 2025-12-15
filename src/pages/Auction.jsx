@@ -12,6 +12,7 @@ import {
   canTeamAffordBid,
   calculateRecommendedBid,
   shuffleArray,
+  extractDriveFileId,
 } from "../utils/helpers";
 
 const Auction = () => {
@@ -47,46 +48,17 @@ const Auction = () => {
         teamsAPI.getAll(),
         playersAPI.getAll(),
       ]);
+
+      console.log("playersData");
+      console.log(playersData);
       setTeams(teamsData);
       setPlayers(playersData);
-
-      console.log("players");
-      console.log(players);
     } catch (error) {
       console.error("Error loading data:", error);
     } finally {
       setLoading(false);
     }
   };
-
-  // const handleShufflePlayer = async () => {
-  //   const unsoldPlayers = players.filter(
-  //     (p) => p.status === "unsold" || p.status === "available"
-  //   );
-  //   if (unsoldPlayers.length === 0) {
-  //     toast.error("No unsold players available!");
-  //     return;
-  //   }
-
-  //   setShuffling(true);
-  //   const shuffled = shuffleArray(unsoldPlayers);
-
-  //   // Animate shuffle
-  //   let count = 0;
-  //   const interval = setInterval(() => {
-  //     setShuffleDisplay(shuffled[count % shuffled.length]);
-  //     count++;
-
-  //     if (count >= 20) {
-  //       clearInterval(interval);
-  //       const selectedPlayer = getRandomPlayer(players);
-  //       setCurrentPlayer(selectedPlayer);
-  //       setShuffleDisplay(null);
-  //       setShuffling(false);
-  //       setBidAmount(selectedPlayer.base_price.toString());
-  //     }
-  //   }, 100);
-  // };
 
   const handleShufflePlayer = async () => {
     const unsoldPlayers = players.filter(
@@ -297,37 +269,29 @@ const Auction = () => {
               </div>
             ) : currentPlayer ? (
               <div>
-                {/* <div className="text-center mb-8">
-                  <div className="bg-blue-100 w-32 h-32 rounded-full mx-auto mb-4 flex items-center justify-center">
-                    <span className="text-4xl font-bold text-blue-600">
-                      {currentPlayer.name.charAt(0)}
-                    </span>
-                  </div>
-                  <h2 className="text-4xl font-bold text-gray-900 mb-2">
-                    {currentPlayer.name}
-                  </h2>
-                  <p className="text-xl text-gray-600 mb-4">
-                    {currentPlayer.role}
-                  </p>
-                  <div className="inline-block bg-green-100 px-6 py-2 rounded-full">
-                    <span className="text-sm text-gray-600">Base Price: </span>
-                    <span className="text-lg font-bold text-green-700">
-                      {formatCurrency(currentPlayer.base_price)}
-                    </span>
-                  </div>
-                </div> */}
                 <div className="flex flex-col md:flex-row items-center md:items-start gap-10 mb-10">
                   {/* LEFT: Player Photo */}
                   <div className="flex flex-col items-center">
-                    <div className="bg-blue-100 w-72 h-72 md:w-80 md:h-80 rounded-2xl overflow-hidden flex items-center justify-center shadow-lg">
-                      {currentPlayer.photo ? (
+                    <div className="bg-blue-100 w-72 h-72 md:w-80 md:h-80 rounded-2xl overflow-hidden flex items-center justify-center shadow-lg relative">
+                      {currentPlayer.player_photo ? (
                         <img
-                          src={currentPlayer.photo}
+                          src={`https://drive.google.com/uc?export=view&id=${extractDriveFileId(
+                            currentPlayer.player_photo
+                          )}`}
+                          // src={`https://drive.google.com/uc?export=view&id=${extractDriveFileId(
+                          //   currentPlayer.player_photo
+                          // )}`}
                           alt={currentPlayer.name}
                           className="w-full h-full object-cover"
+                          loading="lazy"
+                          referrerPolicy="no-referrer"
                         />
                       ) : (
-                        <span className="text-7xl font-bold text-blue-600">
+                        <span
+                          className={`text-7xl font-bold text-blue-600 ${
+                            currentPlayer.player_photo ? "hidden" : "block"
+                          }`}
+                        >
                           {currentPlayer.name.charAt(0)}
                         </span>
                       )}
@@ -394,66 +358,14 @@ const Auction = () => {
                       </span>
                       <span className="text-gray-600 ml-2">
                         by{" "}
-                        {teams.find((t) => t.id === currentBid.team_id)?.name}
+                        {
+                          teams.find((t) => t.id === currentBid.team_id)
+                            ?.team_name
+                        }
                       </span>
                     </p>
                   </div>
                 )}
-
-                {/* <div className="space-y-4">
-                  <select
-                    value={selectedTeam}
-                    onChange={(e) => setSelectedTeam(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    disabled={isAuctionLocked}
-                  >
-                    <option value="">Select Team</option>
-                    {teams.map((team) => (
-                      <option key={team.id} value={team.id}>
-                        {team.team_name} -{" "}
-                        {formatCurrency(team.total_points - team.points_used)}{" "}
-                        left
-                      </option>
-                    ))}
-                  </select>
-
-                  <input
-                    type="number"
-                    value={bidAmount}
-                    onChange={(e) => setBidAmount(e.target.value)}
-                    placeholder="Enter bid amount"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    disabled={isAuctionLocked}
-                  />
-
-                  <div className="flex gap-3">
-                    <Button
-                      onClick={handlePlaceBid}
-                      className="flex-1"
-                      disabled={isAuctionLocked}
-                    >
-                      <Gavel size={20} className="inline mr-2" />
-                      Place Bid
-                    </Button>
-                    <Button
-                      onClick={handleFinalizeSale}
-                      variant="secondary"
-                      className="flex-1"
-                      disabled={!currentBid || isAuctionLocked}
-                    >
-                      <Check size={20} className="inline mr-2" />
-                      Finalize Sale
-                    </Button>
-                    <Button
-                      onClick={handleMarkUnsold}
-                      variant="danger"
-                      disabled={isAuctionLocked}
-                    >
-                      <X size={20} className="inline mr-2" />
-                      Unsold
-                    </Button>
-                  </div>
-                </div> */}
 
                 <div className="space-y-4">
                   {/* Team Radio Buttons */}
@@ -582,7 +494,11 @@ const Auction = () => {
                       </span>
                     </div>
                     <div className="text-xs text-gray-600">
-                      <p>Recommended max: {formatCurrency(recommendedBid)}</p>
+                      <p>Recommended max : {formatCurrency(recommendedBid)}</p>
+                      <p>Total players : {team.players_count}</p>
+                      <p>Points left : {team.points_left}</p>
+                      {/* <p>Recommended max : {formatCurrency(recommendedBid)}</p>
+                      <p>Recommended max : {formatCurrency(recommendedBid)}</p> */}
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
                       <div
