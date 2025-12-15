@@ -49,8 +49,12 @@ const Auction = () => {
         playersAPI.getAll(),
       ]);
 
-      console.log("playersData");
-      console.log(playersData);
+      // console.log("playersData");
+      // console.log(playersData);
+
+      // console.log("teams");
+      // console.log(teams);
+
       setTeams(teamsData);
       setPlayers(playersData);
     } catch (error) {
@@ -148,19 +152,29 @@ const Auction = () => {
   };
 
   const handleFinalizeSale = async () => {
+    // if(currentBid)
+    // console.log("currentBid");
+    // console.log(currentBid);
+
     if (!currentBid || !currentPlayer) {
       toast.error("No active bid to finalize");
       return;
     }
 
-    // console.log("teams");
-    // console.log(teams);
+    const team = teams.find((t) => t.id === currentBid.team_id);
 
-    // console.log("First passed");
+    // console.log("team");
+    // console.log(team);
+
+    // if (
+    //   team.balance_players_count === 0 &&
+    //   team.players_count === team.max_players
+    // ) {
+    //   toast.error("Max players rechead");
+    //   return;
+    // }
 
     try {
-      const team = teams.find((t) => t.id === currentBid.team_id);
-
       // Update player
       await playersAPI.update(currentPlayer.id, {
         status: "sold",
@@ -173,6 +187,9 @@ const Auction = () => {
       // Update team points
       await teamsAPI.update(team.id, {
         points_used: team.points_used + currentBid.amount,
+        balance_players_count: team.balance_players_count - 1,
+        players_count: team.players_count + 1,
+        points_left: team.points_left - currentBid.amount,
       });
 
       // console.log("Second passed");
@@ -198,6 +215,9 @@ const Auction = () => {
 
       updateTeam(team.id, {
         points_used: team.points_used + currentBid.amount,
+        balance_players_count: team.balance_players_count - 1,
+        players_count: team.players_count + 1,
+        points_left: team.points_left - currentBid.amount,
       });
 
       // Reset auction state
@@ -230,7 +250,7 @@ const Auction = () => {
     }
   };
 
-  const unsoldCount = players.filter(
+  const remainingPlayers = players.filter(
     (p) => p.status === "unsold" || p.status === "available"
   ).length;
 
@@ -241,11 +261,13 @@ const Auction = () => {
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Live Auction</h1>
-          <p className="text-gray-600 mt-1">{unsoldCount} players remaining</p>
+          <p className="text-gray-600 mt-1">
+            {remainingPlayers} players remaining
+          </p>
         </div>
         <Button
           onClick={handleShufflePlayer}
-          // disabled={shuffling || unsoldCount === 0}
+          disabled={shuffling || remainingPlayers === 0}
         >
           <Shuffle size={20} className="inline mr-2" />
           {shuffling ? "Shuffling..." : "Pick Random Player"}
@@ -394,7 +416,7 @@ const Auction = () => {
                               onChange={() => setSelectedTeam(team.id)}
                               disabled={
                                 isAuctionLocked ||
-                                team.players_count == team.max_player
+                                team.players_count === team.max_player
                               }
                               className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                             />
@@ -477,7 +499,7 @@ const Auction = () => {
                 const pointsLeft = team.total_points - team.points_used;
                 const recommendedBid = calculateRecommendedBid(
                   team,
-                  unsoldCount
+                  remainingPlayers
                 );
 
                 return (
@@ -491,8 +513,14 @@ const Auction = () => {
                       </span>
                     </div>
                     <div className="text-xs text-gray-600">
-                      <p>Recommended max : {formatCurrency(recommendedBid)}</p>
+                      <p>
+                        Recommended max points :{" "}
+                        {formatCurrency(recommendedBid)}
+                      </p>
                       <p>Total players : {team.players_count}</p>
+                      <p>
+                        Balance players count : {team.balance_players_count}
+                      </p>
                       <p>Points left : {team.points_left}</p>
                       {/* <p>Recommended max : {formatCurrency(recommendedBid)}</p>
                       <p>Recommended max : {formatCurrency(recommendedBid)}</p> */}

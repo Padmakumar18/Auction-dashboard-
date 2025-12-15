@@ -8,7 +8,7 @@ import Select from "../components/Select";
 import Table from "../components/Table";
 import Loader from "../components/Loader";
 import useStore from "../store/useStore";
-import { playersAPI, teamsAPI } from "../services/api";
+import { playersAPI, teamsAPI, helperAPI } from "../services/api";
 import { formatCurrency, validatePlayer, parseCSV } from "../utils/helpers";
 
 const Players = () => {
@@ -21,16 +21,60 @@ const Players = () => {
   const [formData, setFormData] = useState({
     name: "",
     role: "",
-    base_price: "",
+    photoLink: "",
   });
+  const [helper, setHelper] = useState([]);
   const [filterRole, setFilterRole] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
+
+  const [unsoldPlayersCount, setUnsoldPlayersCount] = useState(0);
+  const [soldPlayersCount, setSoldPlayersCount] = useState(0);
+  const [availablePlayersCount, setAvailablePlayersCount] = useState(0);
 
   const roles = ["Batsman", "Bowler", "All-Rounder", "Wicket-Keeper"];
 
   useEffect(() => {
     loadData();
+    loadHelper();
   }, []);
+
+  useEffect(() => {
+    const unsoldPlayersCount = players
+      ? players.filter((p) => p.status === "unsold")
+      : 0;
+
+    setUnsoldPlayersCount(unsoldPlayersCount ? unsoldPlayersCount.length : 0);
+
+    const soldPlayersCount = players
+      ? players.filter((p) => p.status === "sold")
+      : 0;
+
+    setSoldPlayersCount(soldPlayersCount ? soldPlayersCount.length : 0);
+
+    const availablePlayersCount = players
+      ? players.filter((p) => p.status === "available")
+      : 0;
+
+    setAvailablePlayersCount(
+      availablePlayersCount ? availablePlayersCount.length : 0
+    );
+  }, [players]);
+
+  const loadHelper = async () => {
+    setLoading(true);
+    try {
+      const data = await helperAPI.getAll();
+      setHelper(data);
+
+      // console.log("helper");
+      // console.log(helper);
+    } catch (error) {
+      console.error("Helper load failed:", error);
+      toast.error("Failed to load helper");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -39,6 +83,9 @@ const Players = () => {
       const getAllTeams = await teamsAPI.getAll();
       setTeams(getAllTeams);
       setPlayers(getAllPlayers);
+
+      // console.log("players");
+      // console.log(players);
     } catch (error) {
       console.error("Error loading players:", error);
       toast.error("Failed to load players");
@@ -53,11 +100,11 @@ const Players = () => {
       setFormData({
         name: player.name,
         role: player.role,
-        base_price: player.base_price,
+        photoLink: player.player_photo,
       });
     } else {
       setEditingPlayer(null);
-      setFormData({ name: "", role: "", base_price: "" });
+      setFormData({ name: "", role: "", photoLink: "" });
     }
     setIsModalOpen(true);
   };
@@ -65,7 +112,7 @@ const Players = () => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingPlayer(null);
-    setFormData({ name: "", role: "", base_price: "" });
+    setFormData({ name: "", role: "", photoLink: "" });
   };
 
   const handleSubmit = async (e) => {
@@ -74,7 +121,7 @@ const Players = () => {
     const validationErrors = validatePlayer({
       name: formData.name,
       role: formData.role,
-      base_price: parseInt(formData.base_price),
+      player_photo: formData.photoLink,
     });
 
     if (validationErrors.length > 0) {
@@ -86,7 +133,8 @@ const Players = () => {
       const playerData = {
         name: formData.name,
         role: formData.role,
-        base_price: parseInt(formData.base_price),
+        base_price: parseInt(helper[0].base_price),
+        player_photo: formData.photoLink,
       };
 
       if (editingPlayer) {
@@ -180,8 +228,10 @@ const Players = () => {
   };
 
   const filteredPlayers = players.filter((player) => {
-    if (filterRole && player.role !== filterRole) return false;
-    if (filterStatus && player.status !== filterStatus) return false;
+    if (filterRole && player.role !== filterRole.toLocaleLowerCase())
+      return false;
+    if (filterStatus && player.status !== filterStatus.toLocaleLowerCase())
+      return false;
     return true;
   });
 
@@ -257,6 +307,20 @@ const Players = () => {
           </Button>
         </div>
       </div>
+      <div className="flex justify-between items-center mb-8">
+        <p className="text-lg text-gray-900">
+          Total Players - {players ? players.length : 0}
+        </p>
+        <p className="text-lg text-gray-900">
+          Available Players - {availablePlayersCount}
+        </p>
+        <p className="text-lg text-gray-900">
+          Sold Players - {soldPlayersCount}
+        </p>
+        <p className="text-lg text-gray-900">
+          Unsold Players - {unsoldPlayersCount}
+        </p>
+      </div>
 
       {/* Filters */}
       <div className="bg-white p-4 rounded-lg shadow-md mb-6">
@@ -319,11 +383,11 @@ const Players = () => {
           />
 
           <Input
-            label="Base Price"
-            type="number"
-            value={formData.base_price}
+            label="Player photo drive link"
+            type="text"
+            value={formData.photoLink}
             onChange={(e) =>
-              setFormData({ ...formData, base_price: e.target.value })
+              setFormData({ ...formData, photoLink: e.target.value })
             }
             placeholder="Enter base price"
             required

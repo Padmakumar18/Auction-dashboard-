@@ -242,9 +242,7 @@ const Analytics = () => {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {teams.map((team) => {
-                  const teamPlayers = players.filter(
-                    (p) => p.team_id === team.id
-                  );
+                  const teamPlayers = team.players_count;
                   const pointsLeft = team.total_points - team.points_used;
                   const usagePercent =
                     (team.points_used / team.total_points) * 100;
@@ -255,7 +253,7 @@ const Analytics = () => {
                         {team.team_name}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-gray-900">
-                        {teamPlayers.length}
+                        {teamPlayers}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-gray-900">
                         {formatCurrency(team.total_points)}

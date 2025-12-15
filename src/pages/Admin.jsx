@@ -33,13 +33,18 @@ const Admin = () => {
         playersAPI.update(player.id, {
           status: "unsold",
           sold_price: null,
-          team_id: null,
+          sold_to: null,
         })
       );
 
       // Reset all teams points
       const teamResetPromises = teams.map((team) =>
-        teamsAPI.update(team.id, { points_used: 0 })
+        teamsAPI.update(team.id, {
+          points_used: 0,
+          points_left: team.total_points,
+          balance_players_count: team.max_players,
+          players_count: 0,
+        })
       );
 
       await Promise.all([...resetPromises, ...teamResetPromises]);
@@ -59,6 +64,7 @@ const Admin = () => {
 
       setIsResetModalOpen(false);
       toast("Auction reset successfully!");
+      toast.dismiss(loadingToast);
     } catch (error) {
       toast("Failed to reset auction: " + error.message);
     } finally {

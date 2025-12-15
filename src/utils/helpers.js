@@ -127,8 +127,8 @@ export const validatePlayer = (player) => {
   if (!player.role || player.role.trim() === "") {
     errors.push("Player role is required");
   }
-  if (!player.base_price || player.base_price <= 0) {
-    errors.push("Base price must be greater than 0");
+  if (!player.player_photo || player.player_photo.trim() === "") {
+    errors.push("Player photo link is required");
   }
   return errors;
 };
