@@ -31,7 +31,7 @@ const Admin = () => {
       // Reset all players to unsold
       const resetPromises = players.map((player) =>
         playersAPI.update(player.id, {
-          status: "unsold",
+          status: "available",
           sold_price: null,
           sold_to: null,
         })
@@ -63,10 +63,10 @@ const Admin = () => {
       setAuctionLogs([]);
 
       setIsResetModalOpen(false);
-      toast("Auction reset successfully!");
+      toast.success("Auction reset successfully!");
       toast.dismiss(loadingToast);
     } catch (error) {
-      toast("Failed to reset auction: " + error.message);
+      toast.error("Failed to reset auction: " + error.message);
     } finally {
       setLoading(false);
     }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { Plus, Edit2, Trash2 } from "lucide-react";
+import { Plus, Edit2, Trash2, Search } from "lucide-react";
 import Card from "../components/Card";
 import Button from "../components/Button";
 import Modal from "../components/Modal";
@@ -20,6 +20,8 @@ const Teams = () => {
 
   const [formData, setFormData] = useState({ name: "", total_points: "" });
 
+  const [searchQuery, setSearchQuery] = useState("");
+
   // PLAYERS MODAL
   const [isPlayersModalOpen, setIsPlayersModalOpen] = useState(false);
   const [selectedTeamPlayers, setSelectedTeamPlayers] = useState([]);
@@ -29,6 +31,10 @@ const Teams = () => {
     loadTeams();
     loadHelper();
   }, []);
+
+  const filteredTeams = teams.filter((team) =>
+    team.team_name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const loadTeams = async () => {
     try {
@@ -205,87 +211,113 @@ const Teams = () => {
           Add Team
         </Button>
       </div>
+      <div>
+        <Input
+          placeholder="Search team by name"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          icon={<Search size={16} />}
+        />
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {teams && teams.length !== 0 ? (
-          <>
-            {teams.map((team) => {
-              const pointsLeft = team.total_points - team.points_used;
-              const percentage = (team.points_used / team.total_points) * 100;
+        {filteredTeams &&
+          filteredTeams.length > 0 &&
+          filteredTeams.map((team) => {
+            const pointsLeft = team.total_points - team.points_used;
+            const percentage = (team.points_used / team.total_points) * 100;
 
-              return (
-                <Card key={team.id}>
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="text-xl font-bold text-gray-900">
-                      {team.team_name}
-                    </h3>
+            return (
+              <Card key={team.id} className="mb-4">
+                <div className="flex justify-between items-start mb-4">
+                  <h3 className="text-xl font-bold text-gray-900">
+                    {team.team_name}
+                  </h3>
 
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleOpenModal(team)}
-                        className="text-blue-600 hover:text-blue-800"
-                      >
-                        <Edit2 size={18} />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(team.id)}
-                        className="text-red-600 hover:text-red-800"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleOpenModal(team)}
+                      className="text-blue-600 hover:text-blue-800"
+                    >
+                      <Edit2 size={18} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(team.id)}
+                      className="text-red-600 hover:text-red-800"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Players Count:</span>
+                    <span className="font-semibold text-green-600">
+                      {team.players_count}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">
+                      Remaining players count:
+                    </span>
+                    <span className="font-semibold text-green-600">
+                      {team.balance_players_count}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Total Points:</span>
+                    <span className="font-semibold">
+                      {formatCurrency(team.total_points)}
+                    </span>
                   </div>
 
-                  <div className="space-y-3">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Total Points:</span>
-                      <span className="font-semibold">
-                        {formatCurrency(team.total_points)}
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Points Used:</span>
-                      <span className="font-semibold">
-                        {formatCurrency(team.points_used)}
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Points Left:</span>
-                      <span className="font-semibold text-green-600">
-                        {formatCurrency(pointsLeft)}
-                      </span>
-                    </div>
-
-                    <div className="mt-4">
-                      <div className="w-full bg-gray-200 rounded-full h-3">
-                        <div
-                          className="bg-blue-600 h-3 rounded-full transition-all"
-                          style={{ width: `${percentage}%` }}
-                        />
-                      </div>
-                      <p className="text-xs text-gray-500 mt-1 text-center">
-                        {percentage.toFixed(1)}% used
-                      </p>
-                    </div>
-                    <div>
-                      <Button
-                        variant="outline"
-                        onClick={() => handleViewPlayers(team)}
-                      >
-                        View Players
-                      </Button>
-                    </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Points Used:</span>
+                    <span className="font-semibold">
+                      {formatCurrency(team.points_used)}
+                    </span>
                   </div>
-                </Card>
-              );
-            })}
-          </>
-        ) : (
-          <p className="flex items-center">No teams available</p>
-        )}
+
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Points Left:</span>
+                    <span className="font-semibold text-green-600">
+                      {formatCurrency(pointsLeft)}
+                    </span>
+                  </div>
+
+                  <div className="mt-4">
+                    <div className="w-full bg-gray-200 rounded-full h-3">
+                      <div
+                        className="bg-blue-600 h-3 rounded-full transition-all"
+                        style={{ width: `${percentage}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1 text-center">
+                      {percentage.toFixed(1)}% used
+                    </p>
+                  </div>
+
+                  <div>
+                    <Button
+                      variant="outline"
+                      onClick={() => handleViewPlayers(team)}
+                    >
+                      View Players
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            );
+          })}
       </div>
+
+      {teams && teams.length === 0 && (
+        <div className="flex flex-col items-center justify-center min-h-[300px] text-gray-400">
+          <p className="text-lg font-medium">No teams available</p>
+          <p className="text-sm">Create a team to get started</p>
+        </div>
+      )}
 
       {/* Add / Edit Team Modal */}
       <Modal

@@ -34,6 +34,7 @@ const Auction = () => {
   const [loading, setLoading] = useState(true);
   const [shuffling, setShuffling] = useState(false);
   const [shuffleDisplay, setShuffleDisplay] = useState(null);
+
   const [bidAmount, setBidAmount] = useState("");
   const [selectedTeam, setSelectedTeam] = useState("");
 
@@ -44,16 +45,11 @@ const Auction = () => {
   const loadData = async () => {
     try {
       setLoading(true);
+
       const [teamsData, playersData] = await Promise.all([
         teamsAPI.getAll(),
         playersAPI.getAll(),
       ]);
-
-      // console.log("playersData");
-      // console.log(playersData);
-
-      // console.log("teams");
-      // console.log(teams);
 
       setTeams(teamsData);
       setPlayers(playersData);
@@ -152,10 +148,6 @@ const Auction = () => {
   };
 
   const handleFinalizeSale = async () => {
-    // if(currentBid)
-    // console.log("currentBid");
-    // console.log(currentBid);
-
     if (!currentBid || !currentPlayer) {
       toast.error("No active bid to finalize");
       return;
@@ -163,19 +155,12 @@ const Auction = () => {
 
     const team = teams.find((t) => t.id === currentBid.team_id);
 
-    // console.log("team");
-    // console.log(team);
-
-    // if (
-    //   team.balance_players_count === 0 &&
-    //   team.players_count === team.max_players
-    // ) {
-    //   toast.error("Max players rechead");
-    //   return;
-    // }
+    if (team.players_count === team.max_players) {
+      toast.error("Maximum player reached");
+      return;
+    }
 
     try {
-      // Update player
       await playersAPI.update(currentPlayer.id, {
         status: "sold",
         sold_price: currentBid.amount,
@@ -275,7 +260,6 @@ const Auction = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Current Player Card */}
         <div className="lg:col-span-2">
           <Card className="h-full">
             {shuffling ? (
@@ -292,25 +276,21 @@ const Auction = () => {
             ) : currentPlayer ? (
               <div>
                 <div className="flex flex-col md:flex-row items-center md:items-start gap-10 mb-10">
+                  {/* <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-10"> */}
                   {/* LEFT: Player Photo */}
-                  <div className="flex flex-col items-center">
-                    <div className="bg-blue-100 w-72 h-72 md:w-80 md:h-80 rounded-2xl overflow-hidden flex items-center justify-center shadow-lg relative">
+                  <div className="flex justify-start">
+                    <div className="bg-blue-100 w-96 h-96 rounded-3xl overflow-hidden flex items-center justify-center shadow-xl">
                       {currentPlayer.player_photo ? (
                         <img
-                          src={`https://drive.google.com/uc?export=view&id=${extractDriveFileId(
+                          src={`https://drive.google.com/thumbnail?id=${extractDriveFileId(
                             currentPlayer.player_photo
                           )}`}
                           alt={currentPlayer.name}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-contain"
                           loading="lazy"
-                          referrerPolicy="no-referrer"
                         />
                       ) : (
-                        <span
-                          className={`text-7xl font-bold text-blue-600 ${
-                            currentPlayer.player_photo ? "hidden" : "block"
-                          }`}
-                        >
+                        <span className="text-8xl font-bold text-blue-600">
                           {currentPlayer.name.charAt(0)}
                         </span>
                       )}
@@ -327,8 +307,13 @@ const Auction = () => {
                       {currentPlayer.role}
                     </p>
 
+                    <span className="text-lg text-gray-600">Base Price: </span>
+                    <span className="text-2xl font-bold text-green-700">
+                      {formatCurrency(currentPlayer.base_price)}
+                    </span>
+
                     <div className="space-y-3 text-gray-700 text-lg">
-                      {currentPlayer.age && (
+                      {/* {currentPlayer.age && (
                         <p>
                           <span className="font-semibold">Age:</span>{" "}
                           {currentPlayer.age}
@@ -354,16 +339,16 @@ const Auction = () => {
                           <span className="font-semibold">Bowling Style:</span>{" "}
                           {currentPlayer.bowling_style}
                         </p>
-                      )}
+                      )} */}
 
-                      <div className="mt-4">
+                      {/* <div className="mt-4">
                         <span className="text-lg text-gray-600">
                           Base Price:{" "}
                         </span>
                         <span className="text-2xl font-bold text-green-700">
                           {formatCurrency(currentPlayer.base_price)}
                         </span>
-                      </div>
+                      </div> */}
                     </div>
                   </div>
                 </div>
@@ -414,10 +399,7 @@ const Auction = () => {
                               value={team.id}
                               checked={isSelected}
                               onChange={() => setSelectedTeam(team.id)}
-                              disabled={
-                                isAuctionLocked ||
-                                team.players_count === team.max_player
-                              }
+                              disabled={isAuctionLocked}
                               className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                             />
 
@@ -435,7 +417,6 @@ const Auction = () => {
                     </div>
                   </div>
 
-                  {/* Bid Input */}
                   <input
                     type="number"
                     value={bidAmount}
@@ -445,7 +426,6 @@ const Auction = () => {
                     disabled={isAuctionLocked}
                   />
 
-                  {/* Action Buttons */}
                   <div className="flex gap-3">
                     <Button
                       onClick={handlePlaceBid}
@@ -488,7 +468,6 @@ const Auction = () => {
           </Card>
         </div>
 
-        {/* Teams Quick View */}
         <div>
           <Card>
             <h3 className="text-xl font-bold text-gray-900 mb-4">
@@ -521,9 +500,12 @@ const Auction = () => {
                       <p>
                         Balance players count : {team.balance_players_count}
                       </p>
-                      <p>Points left : {team.points_left}</p>
-                      {/* <p>Recommended max : {formatCurrency(recommendedBid)}</p>
-                      <p>Recommended max : {formatCurrency(recommendedBid)}</p> */}
+                      <p>
+                        Points used :{" "}
+                        {new Intl.NumberFormat("en-IN").format(
+                          team.points_used
+                        )}
+                      </p>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
                       <div

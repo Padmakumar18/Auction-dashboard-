@@ -15,6 +15,7 @@ const Players = () => {
   const { teams, setTeams, players, setPlayers, addPlayer, updatePlayer } =
     useStore();
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState(null);
@@ -129,10 +130,18 @@ const Players = () => {
       return;
     }
 
+    const ROLE_NORMALIZATION_MAP = {
+      Batsman: "batsman",
+      Bowler: "bowler",
+      "All-Rounder": "allrounder",
+      "Wicket-Keeper": "wicketkeeper",
+    };
+    const normalizedRole = ROLE_NORMALIZATION_MAP[formData.role];
+
     try {
       const playerData = {
         name: formData.name,
-        role: formData.role,
+        role: normalizedRole,
         base_price: parseInt(helper[0].base_price),
         player_photo: formData.photoLink,
       };
@@ -228,10 +237,17 @@ const Players = () => {
   };
 
   const filteredPlayers = players.filter((player) => {
-    if (filterRole && player.role !== filterRole.toLocaleLowerCase())
+    if (
+      searchQuery &&
+      !player.name.toLowerCase().includes(searchQuery.toLowerCase())
+    )
       return false;
-    if (filterStatus && player.status !== filterStatus.toLocaleLowerCase())
+
+    if (filterRole && player.role !== filterRole.toLowerCase()) return false;
+
+    if (filterStatus && player.status !== filterStatus.toLowerCase())
       return false;
+
     return true;
   });
 
@@ -326,6 +342,12 @@ const Players = () => {
       <div className="bg-white p-4 rounded-lg shadow-md mb-6">
         <div className="flex items-center gap-4">
           <Filter size={20} className="text-gray-600" />
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search by player name"
+            className="mb-0 flex-1"
+          />
           <Select
             value={filterRole}
             onChange={(e) => setFilterRole(e.target.value)}
@@ -348,6 +370,7 @@ const Players = () => {
             onClick={() => {
               setFilterRole("");
               setFilterStatus("");
+              setSearchQuery("");
             }}
           >
             Clear
