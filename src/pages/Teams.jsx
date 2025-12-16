@@ -1,23 +1,26 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { Plus, Edit2, Trash2 } from "lucide-react";
+import { Plus, Edit2, Trash2, Search } from "lucide-react";
 import Card from "../components/Card";
 import Button from "../components/Button";
 import Modal from "../components/Modal";
 import Input from "../components/Input";
 import Loader from "../components/Loader";
 import useStore from "../store/useStore";
-import { teamsAPI, playersAPI } from "../services/api";
+import { teamsAPI, playersAPI, helperAPI } from "../services/api";
 import { formatCurrency, validateTeam } from "../utils/helpers";
 
 const Teams = () => {
   const { teams, setTeams, addTeam, updateTeam } = useStore();
+  const [helper, setHelper] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTeam, setEditingTeam] = useState(null);
 
   const [formData, setFormData] = useState({ name: "", total_points: "" });
+
+  const [searchQuery, setSearchQuery] = useState("");
 
   // PLAYERS MODAL
   const [isPlayersModalOpen, setIsPlayersModalOpen] = useState(false);
@@ -26,7 +29,12 @@ const Teams = () => {
 
   useEffect(() => {
     loadTeams();
+    loadHelper();
   }, []);
+
+  const filteredTeams = teams.filter((team) =>
+    team.team_name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const loadTeams = async () => {
     try {
@@ -41,10 +49,29 @@ const Teams = () => {
     }
   };
 
+  const loadHelper = async () => {
+    setLoading(true);
+    try {
+      const data = await helperAPI.getAll();
+      setHelper(data);
+
+      // console.log("helper");
+      // console.log(helper);
+    } catch (error) {
+      console.error("Helper load failed:", error);
+      toast.error("Failed to load helper");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleOpenModal = (team = null) => {
     if (team) {
       setEditingTeam(team);
-      setFormData({ name: team.name, total_points: team.total_points });
+      setFormData({
+        name: team.team_name,
+        total_points: helper[0].total_points,
+      });
     } else {
       setEditingTeam(null);
       setFormData({ name: "", total_points: "" });
@@ -63,7 +90,7 @@ const Teams = () => {
 
     const validationErrors = validateTeam({
       name: formData.name,
-      total_points: parseInt(formData.total_points),
+      total_points: parseInt(helper[0].total_points),
     });
 
     if (validationErrors.length > 0) {
@@ -73,8 +100,13 @@ const Teams = () => {
 
     try {
       const teamData = {
-        name: formData.name,
-        total_points: parseInt(formData.total_points),
+        team_name: formData.name,
+        total_points: parseInt(helper[0].total_points),
+        points_used: 0,
+        points_left: parseInt(helper[0].total_points),
+        players_count: 0,
+        max_players: parseInt(helper[0].max_players),
+        balance_players_count: parseInt(helper[0].max_players),
       };
 
       if (editingTeam) {
@@ -93,16 +125,57 @@ const Teams = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this team?")) return;
+  // const handleDelete = async (id) => {
+  //   if (!window.confirm("Are you sure you want to delete this team?")) return;
 
-    try {
-      await teamsAPI.delete(id);
-      setTeams(teams.filter((t) => t.id !== id));
-      toast.success("Team deleted successfully!");
-    } catch (error) {
-      toast.error("Failed to delete team: " + error.message);
-    }
+  //   try {
+  //     await teamsAPI.delete(id);
+  //     setTeams(teams.filter((t) => t.id !== id));
+  //     toast.success("Team deleted successfully!");
+  //   } catch (error) {
+  //     toast.error("Failed to delete team: " + error.message);
+  //   }
+  // };
+
+  const handleDelete = async (id) => {
+    toast(
+      (t) => (
+        <div className="flex flex-col gap-3">
+          <p className="text-sm font-medium text-white-900">
+            Are you sure you want to delete this team?
+          </p>
+
+          <div className="flex justify-end gap-2">
+            <button
+              className="px-3 py-1 text-sm bg-gray-200 text-black rounded"
+              onClick={() => toast.dismiss(t.id)}
+            >
+              Cancel
+            </button>
+
+            <button
+              className="px-3 py-1 text-sm bg-red-600 text-white rounded"
+              onClick={async () => {
+                toast.dismiss(t.id);
+
+                try {
+                  await teamsAPI.delete(id);
+                  setTeams(teams.filter((t) => t.id !== id));
+                  toast.success("Team deleted successfully!");
+                } catch (error) {
+                  toast.error(
+                    "Failed to delete team: " + (error.message || "")
+                  );
+                }
+              }}
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      ),
+      { duration: Infinity }
+    );
   };
 
   // ---------------------------
@@ -138,81 +211,113 @@ const Teams = () => {
           Add Team
         </Button>
       </div>
+      <div>
+        <Input
+          placeholder="Search team by name"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          icon={<Search size={16} />}
+        />
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {teams.map((team) => {
-          const pointsLeft = team.total_points - team.points_used;
-          const percentage = (team.points_used / team.total_points) * 100;
+        {filteredTeams &&
+          filteredTeams.length > 0 &&
+          filteredTeams.map((team) => {
+            const pointsLeft = team.total_points - team.points_used;
+            const percentage = (team.points_used / team.total_points) * 100;
 
-          return (
-            <Card key={team.id}>
-              <div className="flex justify-between items-start mb-4">
-                <h3 className="text-xl font-bold text-gray-900">
-                  {team.team_name}
-                </h3>
+            return (
+              <Card key={team.id} className="mb-4">
+                <div className="flex justify-between items-start mb-4">
+                  <h3 className="text-xl font-bold text-gray-900">
+                    {team.team_name}
+                  </h3>
 
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleOpenModal(team)}
-                    className="text-blue-600 hover:text-blue-800"
-                  >
-                    <Edit2 size={18} />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(team.id)}
-                    className="text-red-600 hover:text-red-800"
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Total Points:</span>
-                  <span className="font-semibold">
-                    {formatCurrency(team.total_points)}
-                  </span>
-                </div>
-
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Points Used:</span>
-                  <span className="font-semibold">
-                    {formatCurrency(team.points_used)}
-                  </span>
-                </div>
-
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Points Left:</span>
-                  <span className="font-semibold text-green-600">
-                    {formatCurrency(pointsLeft)}
-                  </span>
-                </div>
-
-                <div className="mt-4">
-                  <div className="w-full bg-gray-200 rounded-full h-3">
-                    <div
-                      className="bg-blue-600 h-3 rounded-full transition-all"
-                      style={{ width: `${percentage}%` }}
-                    />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleOpenModal(team)}
+                      className="text-blue-600 hover:text-blue-800"
+                    >
+                      <Edit2 size={18} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(team.id)}
+                      className="text-red-600 hover:text-red-800"
+                    >
+                      <Trash2 size={18} />
+                    </button>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1 text-center">
-                    {percentage.toFixed(1)}% used
-                  </p>
                 </div>
-                <div>
-                  <Button
-                    variant="outline"
-                    onClick={() => handleViewPlayers(team)}
-                  >
-                    View Players
-                  </Button>
+
+                <div className="space-y-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Players Count:</span>
+                    <span className="font-semibold text-green-600">
+                      {team.players_count}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">
+                      Remaining players count:
+                    </span>
+                    <span className="font-semibold text-green-600">
+                      {team.balance_players_count}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Total Points:</span>
+                    <span className="font-semibold">
+                      {formatCurrency(team.total_points)}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Points Used:</span>
+                    <span className="font-semibold">
+                      {formatCurrency(team.points_used)}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Points Left:</span>
+                    <span className="font-semibold text-green-600">
+                      {formatCurrency(pointsLeft)}
+                    </span>
+                  </div>
+
+                  <div className="mt-4">
+                    <div className="w-full bg-gray-200 rounded-full h-3">
+                      <div
+                        className="bg-blue-600 h-3 rounded-full transition-all"
+                        style={{ width: `${percentage}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1 text-center">
+                      {percentage.toFixed(1)}% used
+                    </p>
+                  </div>
+
+                  <div>
+                    <Button
+                      variant="outline"
+                      onClick={() => handleViewPlayers(team)}
+                    >
+                      View Players
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            </Card>
-          );
-        })}
+              </Card>
+            );
+          })}
       </div>
+
+      {teams && teams.length === 0 && (
+        <div className="flex flex-col items-center justify-center min-h-[300px] text-gray-400">
+          <p className="text-lg font-medium">No teams available</p>
+          <p className="text-sm">Create a team to get started</p>
+        </div>
+      )}
 
       {/* Add / Edit Team Modal */}
       <Modal
@@ -229,7 +334,7 @@ const Teams = () => {
             required
           />
 
-          <Input
+          {/* <Input
             label="Total Points"
             type="number"
             value={formData.total_points}
@@ -238,7 +343,7 @@ const Teams = () => {
             }
             placeholder="Enter total points"
             required
-          />
+          /> */}
 
           <div className="flex gap-3 justify-end">
             <Button variant="outline" onClick={handleCloseModal} type="button">
@@ -268,7 +373,7 @@ const Teams = () => {
                   Base Price: {formatCurrency(player.base_price)}
                 </p>
                 <p className="text-sm font-semibold text-green-700">
-                  Base Price: {formatCurrency(player.sold_price)}
+                  Sold Price: {formatCurrency(player.sold_price)}
                 </p>
               </div>
             ))}

@@ -8,29 +8,74 @@ import Select from "../components/Select";
 import Table from "../components/Table";
 import Loader from "../components/Loader";
 import useStore from "../store/useStore";
-import { playersAPI, teamsAPI } from "../services/api";
+import { playersAPI, teamsAPI, helperAPI } from "../services/api";
 import { formatCurrency, validatePlayer, parseCSV } from "../utils/helpers";
 
 const Players = () => {
   const { teams, setTeams, players, setPlayers, addPlayer, updatePlayer } =
     useStore();
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState(null);
   const [formData, setFormData] = useState({
     name: "",
     role: "",
-    base_price: "",
+    photoLink: "",
   });
+  const [helper, setHelper] = useState([]);
   const [filterRole, setFilterRole] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
+
+  const [unsoldPlayersCount, setUnsoldPlayersCount] = useState(0);
+  const [soldPlayersCount, setSoldPlayersCount] = useState(0);
+  const [availablePlayersCount, setAvailablePlayersCount] = useState(0);
 
   const roles = ["Batsman", "Bowler", "All-Rounder", "Wicket-Keeper"];
 
   useEffect(() => {
     loadData();
+    loadHelper();
   }, []);
+
+  useEffect(() => {
+    const unsoldPlayersCount = players
+      ? players.filter((p) => p.status === "unsold")
+      : 0;
+
+    setUnsoldPlayersCount(unsoldPlayersCount ? unsoldPlayersCount.length : 0);
+
+    const soldPlayersCount = players
+      ? players.filter((p) => p.status === "sold")
+      : 0;
+
+    setSoldPlayersCount(soldPlayersCount ? soldPlayersCount.length : 0);
+
+    const availablePlayersCount = players
+      ? players.filter((p) => p.status === "available")
+      : 0;
+
+    setAvailablePlayersCount(
+      availablePlayersCount ? availablePlayersCount.length : 0
+    );
+  }, [players]);
+
+  const loadHelper = async () => {
+    setLoading(true);
+    try {
+      const data = await helperAPI.getAll();
+      setHelper(data);
+
+      // console.log("helper");
+      // console.log(helper);
+    } catch (error) {
+      console.error("Helper load failed:", error);
+      toast.error("Failed to load helper");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -39,6 +84,9 @@ const Players = () => {
       const getAllTeams = await teamsAPI.getAll();
       setTeams(getAllTeams);
       setPlayers(getAllPlayers);
+
+      // console.log("players");
+      // console.log(players);
     } catch (error) {
       console.error("Error loading players:", error);
       toast.error("Failed to load players");
@@ -53,11 +101,11 @@ const Players = () => {
       setFormData({
         name: player.name,
         role: player.role,
-        base_price: player.base_price,
+        photoLink: player.player_photo,
       });
     } else {
       setEditingPlayer(null);
-      setFormData({ name: "", role: "", base_price: "" });
+      setFormData({ name: "", role: "", photoLink: "" });
     }
     setIsModalOpen(true);
   };
@@ -65,7 +113,7 @@ const Players = () => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingPlayer(null);
-    setFormData({ name: "", role: "", base_price: "" });
+    setFormData({ name: "", role: "", photoLink: "" });
   };
 
   const handleSubmit = async (e) => {
@@ -74,7 +122,7 @@ const Players = () => {
     const validationErrors = validatePlayer({
       name: formData.name,
       role: formData.role,
-      base_price: parseInt(formData.base_price),
+      player_photo: formData.photoLink,
     });
 
     if (validationErrors.length > 0) {
@@ -82,11 +130,20 @@ const Players = () => {
       return;
     }
 
+    const ROLE_NORMALIZATION_MAP = {
+      Batsman: "batsman",
+      Bowler: "bowler",
+      "All-Rounder": "allrounder",
+      "Wicket-Keeper": "wicketkeeper",
+    };
+    const normalizedRole = ROLE_NORMALIZATION_MAP[formData.role];
+
     try {
       const playerData = {
         name: formData.name,
-        role: formData.role,
-        base_price: parseInt(formData.base_price),
+        role: normalizedRole,
+        base_price: parseInt(helper[0].base_price),
+        player_photo: formData.photoLink,
       };
 
       if (editingPlayer) {
@@ -106,16 +163,57 @@ const Players = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this player?")) return;
+    toast(
+      (t) => (
+        <div className="flex flex-col gap-3">
+          <p className="text-sm font-medium text-white-900">
+            Are you sure you want to delete this player?
+          </p>
 
-    try {
-      await playersAPI.delete(id);
-      setPlayers(players.filter((p) => p.id !== id));
-      toast.success("Player deleted successfully!");
-    } catch (error) {
-      toast.error("Failed to delete player: " + error.message);
-    }
+          <div className="flex justify-end gap-2">
+            <button
+              className="px-3 py-1 text-sm bg-gray-200 text-black rounded"
+              onClick={() => toast.dismiss(t.id)}
+            >
+              Cancel
+            </button>
+
+            <button
+              className="px-3 py-1 text-sm bg-red-600 text-white rounded"
+              onClick={async () => {
+                toast.dismiss(t.id);
+
+                try {
+                  await playersAPI.delete(id);
+                  setPlayers(players.filter((p) => p.id !== id));
+                  toast.success("Player deleted successfully!");
+                } catch (error) {
+                  toast.error(
+                    "Failed to delete player: " + (error.message || "")
+                  );
+                }
+              }}
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      ),
+      { duration: Infinity }
+    );
   };
+
+  // const handleDelete = async (id) => {
+  //   if (!window.confirm("Are you sure you want to delete this player?")) return;
+
+  //   try {
+  //     await playersAPI.delete(id);
+  //     setPlayers(players.filter((p) => p.id !== id));
+  //     toast.success("Player deleted successfully!");
+  //   } catch (error) {
+  //     toast.error("Failed to delete player: " + error.message);
+  //   }
+  // };
 
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
@@ -139,8 +237,17 @@ const Players = () => {
   };
 
   const filteredPlayers = players.filter((player) => {
-    if (filterRole && player.role !== filterRole) return false;
-    if (filterStatus && player.status !== filterStatus) return false;
+    if (
+      searchQuery &&
+      !player.name.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+      return false;
+
+    if (filterRole && player.role !== filterRole.toLowerCase()) return false;
+
+    if (filterStatus && player.status !== filterStatus.toLowerCase())
+      return false;
+
     return true;
   });
 
@@ -163,10 +270,12 @@ const Players = () => {
       header: "Status",
       render: (row) => (
         <span
-          className={`px-2 py-1 rounded-full text-xs font-semibold ${
+          className={`px-2 py-1  font-semibold ${
             row.status === "sold"
-              ? "bg-green-100 text-green-800"
-              : "bg-gray-100 text-gray-800"
+              ? "bg-green-100 text-green-800 text-sm"
+              : row.status === "unsold"
+              ? "bg-red-100 text-red-800 text-sm"
+              : "bg-gray-100 text-gray-800 text-sm"
           }`}
         >
           {row.status}
@@ -206,21 +315,41 @@ const Players = () => {
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Players Management</h1>
         <div className="flex gap-3">
-          <Button variant="outline" onClick={() => setIsUploadModalOpen(true)}>
+          {/* <Button variant="outline" onClick={() => setIsUploadModalOpen(true)}>
             <Upload size={20} className="inline mr-2" />
             Upload CSV
-          </Button>
+          </Button> */}
           <Button onClick={() => handleOpenModal()}>
             <Plus size={20} className="inline mr-2" />
             Add Player
           </Button>
         </div>
       </div>
+      <div className="flex justify-between items-center mb-8">
+        <p className="text-lg text-gray-900">
+          Total Players - {players ? players.length : 0}
+        </p>
+        <p className="text-lg text-gray-900">
+          Available Players - {availablePlayersCount}
+        </p>
+        <p className="text-lg text-gray-900">
+          Sold Players - {soldPlayersCount}
+        </p>
+        <p className="text-lg text-gray-900">
+          Unsold Players - {unsoldPlayersCount}
+        </p>
+      </div>
 
       {/* Filters */}
       <div className="bg-white p-4 rounded-lg shadow-md mb-6">
         <div className="flex items-center gap-4">
           <Filter size={20} className="text-gray-600" />
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search by player name"
+            className="mb-0 flex-1"
+          />
           <Select
             value={filterRole}
             onChange={(e) => setFilterRole(e.target.value)}
@@ -243,6 +372,7 @@ const Players = () => {
             onClick={() => {
               setFilterRole("");
               setFilterStatus("");
+              setSearchQuery("");
             }}
           >
             Clear
@@ -250,12 +380,10 @@ const Players = () => {
         </div>
       </div>
 
-      {/* Players Table */}
       <div className="bg-white rounded-lg shadow-md">
         <Table columns={columns} data={filteredPlayers} />
       </div>
 
-      {/* Add/Edit Modal */}
       <Modal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
@@ -280,11 +408,11 @@ const Players = () => {
           />
 
           <Input
-            label="Base Price"
-            type="number"
-            value={formData.base_price}
+            label="Player photo drive link"
+            type="text"
+            value={formData.photoLink}
             onChange={(e) =>
-              setFormData({ ...formData, base_price: e.target.value })
+              setFormData({ ...formData, photoLink: e.target.value })
             }
             placeholder="Enter base price"
             required

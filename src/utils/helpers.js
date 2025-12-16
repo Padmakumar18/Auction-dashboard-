@@ -127,8 +127,8 @@ export const validatePlayer = (player) => {
   if (!player.role || player.role.trim() === "") {
     errors.push("Player role is required");
   }
-  if (!player.base_price || player.base_price <= 0) {
-    errors.push("Base price must be greater than 0");
+  if (!player.player_photo || player.player_photo.trim() === "") {
+    errors.push("Player photo link is required");
   }
   return errors;
 };
@@ -164,10 +164,84 @@ export const validateTeam = (team) => {
 //   return null;
 // }
 
-export const extractDriveFileId = (url) => {
-  if (!url) return null;
+// export const extractDriveFileId = (url) => {
+//   if (!url) return null;
 
-  const match = url.match(/(?:\/d\/|id=)([a-zA-Z0-9_-]{25,})/);
+//   const match = url.match(/(?:\/d\/|id=)([a-zA-Z0-9_-]{25,})/);
+
+//   return match ? match[1] : null;
+// };
+
+// export const hashMyPassword = (password) => {
+//   let hash = 0;
+
+//   for (let i = 0; i < password.length; i++) {
+//     hash = (hash * 31 + password.charCodeAt(i)) >>> 0;
+//   }
+
+//   return hash.toString();
+// };
+
+// In helpers.js - Replace the current extractDriveFileId function
+
+export const extractDriveFileId = (input) => {
+  if (!input || typeof input !== "string") return null;
+
+  // Trim whitespace defensively
+  const value = input.trim();
+
+  // Case 1: Input is already a Drive file ID
+  if (/^[a-zA-Z0-9_-]{10,}$/.test(value)) {
+    return value;
+  }
+
+  // Case 2: Extract from any known Drive URL pattern
+  const match = value.match(/(?:\/d\/|id=)([a-zA-Z0-9_-]{10,})/);
 
   return match ? match[1] : null;
 };
+
+/////// Recommended points logic //////
+export const AUCTION_CONFIG = {
+  BASE_MIN_BID: 1000, // Minimum mandatory bid per player
+  TOTAL_BUDGET: 50000, // Total points per team
+  MAX_PLAYERS: 15, // Squad size cap
+
+  BID_INCREMENTS: [
+    { upto: 5000, step: 200 },
+    { upto: 10000, step: 500 },
+    { upto: Infinity, step: 1000 },
+  ],
+};
+
+export const getBidIncrement = (currentBid) => {
+  const rule = AUCTION_CONFIG.BID_INCREMENTS.find((r) => currentBid <= r.upto);
+  return rule.step;
+};
+
+export const normalizeBidToStep = (bid) => {
+  const step = getBidIncrement(bid);
+  return Math.floor(bid / step) * step;
+};
+
+export const calculateMaxPermissibleBid = (team) => {
+  if (!team) return 0;
+
+  const pointsLeft = team.total_points - team.points_used;
+  const playersRemaining = AUCTION_CONFIG.MAX_PLAYERS - team.players_count;
+
+  if (playersRemaining <= 0 || pointsLeft < AUCTION_CONFIG.BASE_MIN_BID) {
+    return 0;
+  }
+
+  const mandatoryReserve = (playersRemaining - 1) * AUCTION_CONFIG.BASE_MIN_BID;
+
+  const rawMaxBid = pointsLeft - mandatoryReserve;
+
+  if (rawMaxBid <= 0) return 0;
+
+  // Enforce increment strategy
+  return normalizeBidToStep(rawMaxBid);
+};
+
+/////////////////////////////////////////////////////

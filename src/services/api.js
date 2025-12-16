@@ -12,6 +12,9 @@ export const teamsAPI = {
   },
 
   create: async (team) => {
+    // console.log("team");
+    // console.log(team);
+
     const { data, error } = await supabase
       .from("teams")
       .insert([{ ...team, points_used: 0 }])
@@ -77,9 +80,14 @@ export const playersAPI = {
   },
 
   create: async (player) => {
+    player.role = player.role.toLowerCase();
+
+    // console.log("updates");
+    // console.log(player);
+
     const { data, error } = await supabase
       .from("players")
-      .insert([{ ...player, status: "unsold" }])
+      .insert([{ ...player, status: "available" }])
       .select()
       .single();
     if (error) throw error;
@@ -322,4 +330,17 @@ export const subscribeToAuctionLogs = (callback) => {
       callback
     )
     .subscribe();
+};
+
+export const helperAPI = {
+  getAll: async () => {
+    const { data, error } = await supabase.from("helper").select("*");
+
+    if (error) throw error;
+
+    // console.log("data");
+    // console.log(data);
+
+    return data;
+  },
 };

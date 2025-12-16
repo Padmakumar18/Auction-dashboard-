@@ -5,7 +5,12 @@ import Card from "../components/Card";
 import Button from "../components/Button";
 import Loader from "../components/Loader";
 import useStore from "../store/useStore";
-import { teamsAPI, playersAPI, auctionLogsAPI } from "../services/api";
+import {
+  teamsAPI,
+  playersAPI,
+  auctionLogsAPI,
+  helperAPI,
+} from "../services/api";
 import {
   formatCurrency,
   getRandomPlayer,
@@ -34,23 +39,56 @@ const Auction = () => {
   const [loading, setLoading] = useState(true);
   const [shuffling, setShuffling] = useState(false);
   const [shuffleDisplay, setShuffleDisplay] = useState(null);
+
+  const [helper, setHelper] = useState([]);
+
   const [bidAmount, setBidAmount] = useState("");
   const [selectedTeam, setSelectedTeam] = useState("");
 
   useEffect(() => {
     loadData();
+    loadHelper();
   }, []);
+
+  useEffect(() => {
+    if (currentPlayer) {
+      console.log("CurrentPlayer");
+      console.log(currentPlayer);
+    }
+  }, [currentPlayer]);
+
+  useEffect(() => {
+    if (currentBid) {
+      setSelectedTeam(currentBid.team_id);
+      setBidAmount(currentBid.amount);
+    } else {
+      setSelectedTeam("");
+      setBidAmount(helper && helper.length > 0 ? helper[0].base_price : 0);
+    }
+  }, [currentBid, helper]);
+
+  const loadHelper = async () => {
+    setLoading(true);
+    try {
+      const data = await helperAPI.getAll();
+      setHelper(data);
+    } catch (error) {
+      console.error("Helper load failed:", error);
+      toast.error("Failed to load helper");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadData = async () => {
     try {
       setLoading(true);
+
       const [teamsData, playersData] = await Promise.all([
         teamsAPI.getAll(),
         playersAPI.getAll(),
       ]);
 
-      console.log("playersData");
-      console.log(playersData);
       setTeams(teamsData);
       setPlayers(playersData);
     } catch (error) {
@@ -61,19 +99,23 @@ const Auction = () => {
   };
 
   const handleShufflePlayer = async () => {
-    const unsoldPlayers = players.filter(
-      (p) => p.status === "unsold" || p.status === "available"
-    );
+    const availablePlayers = players.filter((p) => p.status === "available");
+    const unsoldPlayers = players.filter((p) => p.status === "unsold");
 
-    if (unsoldPlayers.length === 0) {
-      toast("No unsold players available!");
+    // console.log("players");
+    // console.log(players);
+
+    const eligiblePlayers =
+      availablePlayers.length > 0 ? availablePlayers : unsoldPlayers;
+
+    if (eligiblePlayers.length === 0) {
+      toast("No players available for selection!");
       return;
     }
 
     setShuffling(true);
 
-    const shuffled = shuffleArray(unsoldPlayers);
-
+    const shuffled = shuffleArray(eligiblePlayers);
     let count = 0;
 
     const interval = setInterval(() => {
@@ -83,23 +125,29 @@ const Auction = () => {
       if (count >= 20) {
         clearInterval(interval);
 
-        // FIX 1: select only from unsold list
-        const selectedPlayer = getRandomPlayer(unsoldPlayers);
+        const selectedPlayer = getRandomPlayer(eligiblePlayers);
 
-        // FIX 2: null protection
         if (!selectedPlayer) {
-          toast.error("Failed to pick a player due to unexpected data issue.");
+          toast.error("Player selection failed due to data inconsistency.");
           setShuffling(false);
           return;
         }
 
         setCurrentPlayer(selectedPlayer);
-
         setShuffleDisplay(null);
         setShuffling(false);
 
-        // FIX 3: safe base_price usage
-        setBidAmount(String(selectedPlayer.base_price || ""));
+        setSelectedTeam("");
+        setCurrentBid(null);
+
+        // console.log("currentPlayer");
+
+        // console.log(currentPlayer);
+
+        // console.log("selectedPlayer");
+        // console.log(selectedPlayer);
+
+        setBidAmount(String(selectedPlayer.base_price ?? ""));
       }
     }, 100);
   };
@@ -153,15 +201,14 @@ const Auction = () => {
       return;
     }
 
-    // console.log("teams");
-    // console.log(teams);
+    const team = teams.find((t) => t.id === currentBid.team_id);
 
-    // console.log("First passed");
+    if (team.players_count === team.max_players) {
+      toast.error("Maximum player reached");
+      return;
+    }
 
     try {
-      const team = teams.find((t) => t.id === currentBid.team_id);
-
-      // Update player
       await playersAPI.update(currentPlayer.id, {
         status: "sold",
         sold_price: currentBid.amount,
@@ -173,6 +220,9 @@ const Auction = () => {
       // Update team points
       await teamsAPI.update(team.id, {
         points_used: team.points_used + currentBid.amount,
+        balance_players_count: team.balance_players_count - 1,
+        players_count: team.players_count + 1,
+        points_left: team.points_left - currentBid.amount,
       });
 
       // console.log("Second passed");
@@ -198,6 +248,9 @@ const Auction = () => {
 
       updateTeam(team.id, {
         points_used: team.points_used + currentBid.amount,
+        balance_players_count: team.balance_players_count - 1,
+        players_count: team.players_count + 1,
+        points_left: team.points_left - currentBid.amount,
       });
 
       // Reset auction state
@@ -224,13 +277,13 @@ const Auction = () => {
       setBidAmount("");
       setSelectedTeam("");
 
-      toast("Player marked as unsold");
+      toast.success("Player marked as unsold");
     } catch (error) {
       toast.error("Failed to mark unsold: " + error.message);
     }
   };
 
-  const unsoldCount = players.filter(
+  const remainingPlayers = players.filter(
     (p) => p.status === "unsold" || p.status === "available"
   ).length;
 
@@ -241,11 +294,13 @@ const Auction = () => {
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Live Auction</h1>
-          <p className="text-gray-600 mt-1">{unsoldCount} players remaining</p>
+          <p className="text-gray-600 mt-1">
+            {remainingPlayers} players remaining
+          </p>
         </div>
         <Button
           onClick={handleShufflePlayer}
-          // disabled={shuffling || unsoldCount === 0}
+          disabled={shuffling || remainingPlayers === 0}
         >
           <Shuffle size={20} className="inline mr-2" />
           {shuffling ? "Shuffling..." : "Pick Random Player"}
@@ -253,7 +308,6 @@ const Auction = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Current Player Card */}
         <div className="lg:col-span-2">
           <Card className="h-full">
             {shuffling ? (
@@ -270,28 +324,21 @@ const Auction = () => {
             ) : currentPlayer ? (
               <div>
                 <div className="flex flex-col md:flex-row items-center md:items-start gap-10 mb-10">
+                  {/* <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-10"> */}
                   {/* LEFT: Player Photo */}
-                  <div className="flex flex-col items-center">
-                    <div className="bg-blue-100 w-72 h-72 md:w-80 md:h-80 rounded-2xl overflow-hidden flex items-center justify-center shadow-lg relative">
+                  <div className="flex justify-start">
+                    <div className="bg-blue-100 w-96 h-96 rounded-3xl overflow-hidden flex items-center justify-center shadow-xl">
                       {currentPlayer.player_photo ? (
                         <img
-                          src={`https://drive.google.com/uc?export=view&id=${extractDriveFileId(
+                          src={`https://drive.google.com/thumbnail?id=${extractDriveFileId(
                             currentPlayer.player_photo
                           )}`}
-                          // src={`https://drive.google.com/uc?export=view&id=${extractDriveFileId(
-                          //   currentPlayer.player_photo
-                          // )}`}
                           alt={currentPlayer.name}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-contain"
                           loading="lazy"
-                          referrerPolicy="no-referrer"
                         />
                       ) : (
-                        <span
-                          className={`text-7xl font-bold text-blue-600 ${
-                            currentPlayer.player_photo ? "hidden" : "block"
-                          }`}
-                        >
+                        <span className="text-8xl font-bold text-blue-600">
                           {currentPlayer.name.charAt(0)}
                         </span>
                       )}
@@ -308,8 +355,13 @@ const Auction = () => {
                       {currentPlayer.role}
                     </p>
 
+                    <span className="text-lg text-gray-600">Base Price: </span>
+                    <span className="text-2xl font-bold text-green-700">
+                      {formatCurrency(currentPlayer.base_price)}
+                    </span>
+
                     <div className="space-y-3 text-gray-700 text-lg">
-                      {currentPlayer.age && (
+                      {/* {currentPlayer.age && (
                         <p>
                           <span className="font-semibold">Age:</span>{" "}
                           {currentPlayer.age}
@@ -335,16 +387,16 @@ const Auction = () => {
                           <span className="font-semibold">Bowling Style:</span>{" "}
                           {currentPlayer.bowling_style}
                         </p>
-                      )}
+                      )} */}
 
-                      <div className="mt-4">
+                      {/* <div className="mt-4">
                         <span className="text-lg text-gray-600">
                           Base Price:{" "}
                         </span>
                         <span className="text-2xl font-bold text-green-700">
                           {formatCurrency(currentPlayer.base_price)}
                         </span>
-                      </div>
+                      </div> */}
                     </div>
                   </div>
                 </div>
@@ -395,10 +447,7 @@ const Auction = () => {
                               value={team.id}
                               checked={isSelected}
                               onChange={() => setSelectedTeam(team.id)}
-                              disabled={
-                                isAuctionLocked ||
-                                team.players_count == team.max_player
-                              }
+                              disabled={isAuctionLocked}
                               className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                             />
 
@@ -416,7 +465,6 @@ const Auction = () => {
                     </div>
                   </div>
 
-                  {/* Bid Input */}
                   <input
                     type="number"
                     value={bidAmount}
@@ -426,7 +474,6 @@ const Auction = () => {
                     disabled={isAuctionLocked}
                   />
 
-                  {/* Action Buttons */}
                   <div className="flex gap-3">
                     <Button
                       onClick={handlePlaceBid}
@@ -469,7 +516,6 @@ const Auction = () => {
           </Card>
         </div>
 
-        {/* Teams Quick View */}
         <div>
           <Card>
             <h3 className="text-xl font-bold text-gray-900 mb-4">
@@ -480,7 +526,7 @@ const Auction = () => {
                 const pointsLeft = team.total_points - team.points_used;
                 const recommendedBid = calculateRecommendedBid(
                   team,
-                  unsoldCount
+                  remainingPlayers
                 );
 
                 return (
@@ -494,11 +540,20 @@ const Auction = () => {
                       </span>
                     </div>
                     <div className="text-xs text-gray-600">
-                      <p>Recommended max : {formatCurrency(recommendedBid)}</p>
+                      <p>
+                        Recommended max points :{" "}
+                        {formatCurrency(recommendedBid)}
+                      </p>
                       <p>Total players : {team.players_count}</p>
-                      <p>Points left : {team.points_left}</p>
-                      {/* <p>Recommended max : {formatCurrency(recommendedBid)}</p>
-                      <p>Recommended max : {formatCurrency(recommendedBid)}</p> */}
+                      <p>
+                        Balance players count : {team.balance_players_count}
+                      </p>
+                      <p>
+                        Points used :{" "}
+                        {new Intl.NumberFormat("en-IN").format(
+                          team.points_used
+                        )}
+                      </p>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
                       <div

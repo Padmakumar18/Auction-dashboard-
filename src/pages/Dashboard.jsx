@@ -27,8 +27,9 @@ const Dashboard = () => {
       setTeams(teamsData);
       setPlayers(playersData);
       setAuctionLogs(logsData);
-      console.log("auctionLogs");
-      console.log(auctionLogs);
+
+      // console.log("auctionLogs");
+      // console.log(auctionLogs);
     } catch (error) {
       console.error("Error loading data:", error);
     } finally {
