@@ -5,7 +5,12 @@ import Card from "../components/Card";
 import Button from "../components/Button";
 import Loader from "../components/Loader";
 import useStore from "../store/useStore";
-import { teamsAPI, playersAPI, auctionLogsAPI } from "../services/api";
+import {
+  teamsAPI,
+  playersAPI,
+  auctionLogsAPI,
+  helperAPI,
+} from "../services/api";
 import {
   formatCurrency,
   getRandomPlayer,
@@ -35,12 +40,45 @@ const Auction = () => {
   const [shuffling, setShuffling] = useState(false);
   const [shuffleDisplay, setShuffleDisplay] = useState(null);
 
+  const [helper, setHelper] = useState([]);
+
   const [bidAmount, setBidAmount] = useState("");
   const [selectedTeam, setSelectedTeam] = useState("");
 
   useEffect(() => {
     loadData();
+    loadHelper();
   }, []);
+
+  useEffect(() => {
+    if (currentPlayer) {
+      console.log("CurrentPlayer");
+      console.log(currentPlayer);
+    }
+  }, [currentPlayer]);
+
+  useEffect(() => {
+    if (currentBid) {
+      setSelectedTeam(currentBid.team_id);
+      setBidAmount(currentBid.amount);
+    } else {
+      setSelectedTeam("");
+      setBidAmount(helper && helper.length > 0 ? helper[0].base_price : 0);
+    }
+  }, [currentBid, helper]);
+
+  const loadHelper = async () => {
+    setLoading(true);
+    try {
+      const data = await helperAPI.getAll();
+      setHelper(data);
+    } catch (error) {
+      console.error("Helper load failed:", error);
+      toast.error("Failed to load helper");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -61,19 +99,23 @@ const Auction = () => {
   };
 
   const handleShufflePlayer = async () => {
-    const unsoldPlayers = players.filter(
-      (p) => p.status === "unsold" || p.status === "available"
-    );
+    const availablePlayers = players.filter((p) => p.status === "available");
+    const unsoldPlayers = players.filter((p) => p.status === "unsold");
 
-    if (unsoldPlayers.length === 0) {
-      toast("No unsold players available!");
+    // console.log("players");
+    // console.log(players);
+
+    const eligiblePlayers =
+      availablePlayers.length > 0 ? availablePlayers : unsoldPlayers;
+
+    if (eligiblePlayers.length === 0) {
+      toast("No players available for selection!");
       return;
     }
 
     setShuffling(true);
 
-    const shuffled = shuffleArray(unsoldPlayers);
-
+    const shuffled = shuffleArray(eligiblePlayers);
     let count = 0;
 
     const interval = setInterval(() => {
@@ -83,23 +125,29 @@ const Auction = () => {
       if (count >= 20) {
         clearInterval(interval);
 
-        // FIX 1: select only from unsold list
-        const selectedPlayer = getRandomPlayer(unsoldPlayers);
+        const selectedPlayer = getRandomPlayer(eligiblePlayers);
 
-        // FIX 2: null protection
         if (!selectedPlayer) {
-          toast.error("Failed to pick a player due to unexpected data issue.");
+          toast.error("Player selection failed due to data inconsistency.");
           setShuffling(false);
           return;
         }
 
         setCurrentPlayer(selectedPlayer);
-
         setShuffleDisplay(null);
         setShuffling(false);
 
-        // FIX 3: safe base_price usage
-        setBidAmount(String(selectedPlayer.base_price || ""));
+        setSelectedTeam("");
+        setCurrentBid(null);
+
+        // console.log("currentPlayer");
+
+        // console.log(currentPlayer);
+
+        // console.log("selectedPlayer");
+        // console.log(selectedPlayer);
+
+        setBidAmount(String(selectedPlayer.base_price ?? ""));
       }
     }, 100);
   };
@@ -229,7 +277,7 @@ const Auction = () => {
       setBidAmount("");
       setSelectedTeam("");
 
-      toast("Player marked as unsold");
+      toast.success("Player marked as unsold");
     } catch (error) {
       toast.error("Failed to mark unsold: " + error.message);
     }

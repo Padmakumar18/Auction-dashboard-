@@ -270,10 +270,12 @@ const Players = () => {
       header: "Status",
       render: (row) => (
         <span
-          className={`px-2 py-1 rounded-full text-xs font-semibold ${
+          className={`px-2 py-1  font-semibold ${
             row.status === "sold"
-              ? "bg-green-100 text-green-800"
-              : "bg-gray-100 text-gray-800"
+              ? "bg-green-100 text-green-800 text-sm"
+              : row.status === "unsold"
+              ? "bg-red-100 text-red-800 text-sm"
+              : "bg-gray-100 text-gray-800 text-sm"
           }`}
         >
           {row.status}
