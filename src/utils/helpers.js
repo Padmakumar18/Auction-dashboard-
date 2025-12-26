@@ -127,9 +127,13 @@ export const validatePlayer = (player) => {
   if (!player.role || player.role.trim() === "") {
     errors.push("Player role is required");
   }
-  if (!player.player_photo || player.player_photo.trim() === "") {
-    errors.push("Player photo link is required");
+  // if (!player.player_photo || player.player_photo.trim() === "") {
+  //   errors.push("Player photo link is required");
+  // }
+  if (!player.photo_file == null) {
+    errors.push("Player photo file is required");
   }
+
   return errors;
 };
 

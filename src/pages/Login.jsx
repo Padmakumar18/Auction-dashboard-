@@ -6,7 +6,6 @@ import Button from "../components/Button";
 import Input from "../components/Input";
 import useStore from "../store/useStore";
 import { authAPI } from "../services/api";
-import { hashMyPassword } from "../utils/helpers";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -16,7 +15,6 @@ const Login = () => {
   const navigate = useNavigate();
   const { setUser } = useStore();
 
-  // Load saved credentials on mount
   useEffect(() => {
     const savedEmail = localStorage.getItem("saved_email");
     const savedPassword = localStorage.getItem("saved_password");
@@ -113,7 +111,7 @@ const Login = () => {
           </Button>
         </form>
 
-        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        {/* <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <div className="flex items-center gap-2 mb-2">
             <User size={16} className="text-blue-600" />
             <p className="text-sm font-semibold text-blue-900">
@@ -129,7 +127,7 @@ const Login = () => {
               <span className="font-semibold">Password:</span> Admin@123
             </p>
           </div>
-        </div>
+        </div> */}
 
         <div className="mt-4 text-center">
           <p className="text-xs text-gray-500">Secure admin access only</p>

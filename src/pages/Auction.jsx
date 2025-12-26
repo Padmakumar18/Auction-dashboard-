@@ -330,9 +330,7 @@ const Auction = () => {
                     <div className="bg-blue-100 w-96 h-96 rounded-3xl overflow-hidden flex items-center justify-center shadow-xl">
                       {currentPlayer.player_photo ? (
                         <img
-                          src={`https://drive.google.com/thumbnail?id=${extractDriveFileId(
-                            currentPlayer.player_photo
-                          )}`}
+                          src={currentPlayer.player_photo}
                           alt={currentPlayer.name}
                           className="w-full h-full object-contain"
                           loading="lazy"
