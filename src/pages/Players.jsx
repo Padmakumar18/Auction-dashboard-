@@ -7,6 +7,8 @@ import Input from "../components/Input";
 import Select from "../components/Select";
 import Table from "../components/Table";
 import Loader from "../components/Loader";
+import UploadInput from "../components/UploadInput";
+import { supabase } from "../config/supabase";
 import useStore from "../store/useStore";
 import { playersAPI, teamsAPI, helperAPI } from "../services/api";
 import { formatCurrency, validatePlayer, parseCSV } from "../utils/helpers";
@@ -22,8 +24,10 @@ const Players = () => {
   const [formData, setFormData] = useState({
     name: "",
     role: "",
-    photoLink: "",
+    photoFile: null, // holds the raw File object
+    // photoLink: "", // holds Supabase public URL after upload
   });
+
   const [helper, setHelper] = useState([]);
   const [filterRole, setFilterRole] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
@@ -119,10 +123,13 @@ const Players = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // -----------------------------
+    // Validation Layer
+    // -----------------------------
     const validationErrors = validatePlayer({
       name: formData.name,
       role: formData.role,
-      player_photo: formData.photoLink,
+      photo_file: formData.photoFile, // required for upload
     });
 
     if (validationErrors.length > 0) {
@@ -136,16 +143,58 @@ const Players = () => {
       "All-Rounder": "allrounder",
       "Wicket-Keeper": "wicketkeeper",
     };
+
     const normalizedRole = ROLE_NORMALIZATION_MAP[formData.role];
 
     try {
+      // -------------------------------------------------
+      // 1. Upload photo to Supabase bucket
+      // -------------------------------------------------
+      let photoUrl = null;
+
+      if (formData.photoFile) {
+        const file = formData.photoFile;
+        // console.log("file");
+        // console.log(file);
+
+        const filePath = `players/${Date.now()}_${file.name}`;
+        // console.log("filePath");
+        // console.log(filePath);
+
+        const { error: uploadError } = await supabase.storage
+          .from("player-photos")
+          .upload(filePath, file);
+
+        // console.log("error");
+        // console.log(error);
+
+        console.log("uploadError");
+        console.log(uploadError);
+
+        if (uploadError) {
+          throw new Error("Photo upload failed. Please retry.");
+        }
+
+        const { data: publicUrlData } = supabase.storage
+          .from("player-photos")
+          .getPublicUrl(filePath);
+
+        photoUrl = publicUrlData.publicUrl;
+      }
+
+      // -------------------------------------------------
+      // 2. Prepare player object for API
+      // -------------------------------------------------
       const playerData = {
         name: formData.name,
         role: normalizedRole,
         base_price: parseInt(helper[0].base_price),
-        player_photo: formData.photoLink,
+        player_photo: photoUrl, // <-- dynamic Supabase URL
       };
 
+      // -------------------------------------------------
+      // 3. Persist to your backend
+      // -------------------------------------------------
       if (editingPlayer) {
         const updated = await playersAPI.update(editingPlayer.id, playerData);
         updatePlayer(editingPlayer.id, updated);
@@ -161,6 +210,53 @@ const Players = () => {
       toast.error(error.message || "Failed to save player");
     }
   };
+
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
+
+  //   const validationErrors = validatePlayer({
+  //     name: formData.name,
+  //     role: formData.role,
+  //     // player_photo: formData.photoLink,
+  //     photo_file: formData.photoFile,
+  //   });
+
+  //   if (validationErrors.length > 0) {
+  //     validationErrors.forEach((error) => toast.error(error));
+  //     return;
+  //   }
+
+  //   const ROLE_NORMALIZATION_MAP = {
+  //     Batsman: "batsman",
+  //     Bowler: "bowler",
+  //     "All-Rounder": "allrounder",
+  //     "Wicket-Keeper": "wicketkeeper",
+  //   };
+  //   const normalizedRole = ROLE_NORMALIZATION_MAP[formData.role];
+
+  //   try {
+  //     const playerData = {
+  //       name: formData.name,
+  //       role: normalizedRole,
+  //       base_price: parseInt(helper[0].base_price),
+  //       player_photo: formData.photoLink,
+  //     };
+
+  //     if (editingPlayer) {
+  //       const updated = await playersAPI.update(editingPlayer.id, playerData);
+  //       updatePlayer(editingPlayer.id, updated);
+  //       toast.success("Player updated successfully!");
+  //     } else {
+  //       const created = await playersAPI.create(playerData);
+  //       addPlayer(created);
+  //       toast.success("Player created successfully!");
+  //     }
+
+  //     handleCloseModal();
+  //   } catch (error) {
+  //     toast.error(error.message || "Failed to save player");
+  //   }
+  // };
 
   const handleDelete = async (id) => {
     toast(
@@ -407,7 +503,7 @@ const Players = () => {
             required
           />
 
-          <Input
+          {/* <Input
             label="Player photo drive link"
             type="text"
             value={formData.photoLink}
@@ -416,6 +512,14 @@ const Players = () => {
             }
             placeholder="Enter base price"
             required
+          /> */}
+
+          <UploadInput
+            label="Player Photo"
+            required
+            onChange={(e) =>
+              setFormData({ ...formData, photoFile: e.target.files[0] })
+            }
           />
 
           <div className="flex gap-3 justify-end">

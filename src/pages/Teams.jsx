@@ -41,6 +41,9 @@ const Teams = () => {
       setLoading(true);
       const data = await teamsAPI.getAll();
       setTeams(data);
+
+      // console.log("data");
+      // console.log(data);
     } catch (error) {
       console.error("Error loading teams:", error);
       toast.error("Failed to load teams");
@@ -184,10 +187,14 @@ const Teams = () => {
   const handleViewPlayers = async (team) => {
     try {
       const players = await playersAPI.getByTeam(team.id);
+
+      // console.log("players");
+      // console.log(players);
+
       const sortedPlayers = players.sort((a, b) => b.base_price - a.base_price);
 
       setSelectedTeamPlayers(sortedPlayers);
-      setSelectedTeamName(team.team_name);
+      setSelectedTeamName(team);
 
       setIsPlayersModalOpen(true);
     } catch (error) {
@@ -358,7 +365,7 @@ const Teams = () => {
       <Modal
         isOpen={isPlayersModalOpen}
         onClose={closePlayersModal}
-        title={`Players - ${selectedTeamName}`}
+        title={`Players - ${selectedTeamName.team_name}`}
       >
         {selectedTeamPlayers && selectedTeamPlayers.length !== 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -367,6 +374,10 @@ const Teams = () => {
                 key={player.id}
                 className="border rounded-lg p-3 shadow-sm bg-white"
               >
+                {selectedTeamName?.retain_player === player.id && (
+                  <p className="font-bold text-red-600">Retain Player</p>
+                )}
+
                 <p className="font-bold text-gray-900">{player.name}</p>
                 <p className="text-sm text-gray-600">Role: {player.role}</p>
                 <p className="text-sm font-semibold text-blue-700">
