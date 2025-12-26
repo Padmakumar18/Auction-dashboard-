@@ -25,7 +25,7 @@ const Players = () => {
     name: "",
     role: "",
     photoFile: null, // holds the raw File object
-    // photoLink: "", // holds Supabase public URL after upload
+    existingPhoto: null, // holds Supabase public URL after upload
   });
 
   const [helper, setHelper] = useState([]);
@@ -99,17 +99,38 @@ const Players = () => {
     }
   };
 
+  // const handleOpenModal = (player = null) => {
+  //   if (player) {
+  //     setEditingPlayer(player);
+  //     setFormData({
+  //       name: player.name,
+  //       role: player.role,
+  //       photoLink: player.player_photo,
+  //     });
+  //   } else {
+  //     setEditingPlayer(null);
+  //     setFormData({ name: "", role: "", photoLink: "" });
+  //   }
+  //   setIsModalOpen(true);
+  // };
+
   const handleOpenModal = (player = null) => {
     if (player) {
       setEditingPlayer(player);
       setFormData({
         name: player.name,
         role: player.role,
-        photoLink: player.player_photo,
+        photoFile: null, // new file if chosen
+        existingPhoto: player.player_photo, // store existing Supabase URL
       });
     } else {
       setEditingPlayer(null);
-      setFormData({ name: "", role: "", photoLink: "" });
+      setFormData({
+        name: "",
+        role: "",
+        photoFile: null,
+        existingPhoto: null,
+      });
     }
     setIsModalOpen(true);
   };
@@ -117,7 +138,12 @@ const Players = () => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingPlayer(null);
-    setFormData({ name: "", role: "", photoLink: "" });
+    setFormData({
+      name: "",
+      role: "",
+      photoFile: null,
+      existingPhoto: null,
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -150,7 +176,9 @@ const Players = () => {
       // -------------------------------------------------
       // 1. Upload photo to Supabase bucket
       // -------------------------------------------------
-      let photoUrl = null;
+      // let photoUrl = null;
+
+      let photoUrl = formData.existingPhoto; // default = existing
 
       if (formData.photoFile) {
         const file = formData.photoFile;
@@ -258,7 +286,9 @@ const Players = () => {
   //   }
   // };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (player) => {
+    console.log("row");
+    console.log(player);
     toast(
       (t) => (
         <div className="flex flex-col gap-3">
@@ -280,8 +310,8 @@ const Players = () => {
                 toast.dismiss(t.id);
 
                 try {
-                  await playersAPI.delete(id);
-                  setPlayers(players.filter((p) => p.id !== id));
+                  await playersAPI.delete(player);
+                  setPlayers(players.filter((p) => p.id !== player.id));
                   toast.success("Player deleted successfully!");
                 } catch (error) {
                   toast.error(
@@ -394,7 +424,7 @@ const Players = () => {
             <Edit2 size={16} />
           </button>
           <button
-            onClick={() => handleDelete(row.id)}
+            onClick={() => handleDelete(row)}
             className="text-red-600 hover:text-red-800"
           >
             <Trash2 size={16} />
@@ -503,20 +533,21 @@ const Players = () => {
             required
           />
 
-          {/* <Input
-            label="Player photo drive link"
-            type="text"
-            value={formData.photoLink}
-            onChange={(e) =>
-              setFormData({ ...formData, photoLink: e.target.value })
-            }
-            placeholder="Enter base price"
-            required
-          /> */}
+          {/* Preview existing photo */}
+          {formData.existingPhoto && (
+            <div className="mb-4">
+              <p className="text-sm text-gray-600 mb-1">Current Photo:</p>
+              <img
+                src={formData.existingPhoto}
+                alt="Player"
+                className="h-32 w-32 object-cover rounded border"
+              />
+            </div>
+          )}
 
+          {/* Upload new photo */}
           <UploadInput
-            label="Player Photo"
-            required
+            label="Upload New Photo"
             onChange={(e) =>
               setFormData({ ...formData, photoFile: e.target.files[0] })
             }

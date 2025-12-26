@@ -114,8 +114,22 @@ export const playersAPI = {
     return data;
   },
 
-  delete: async (id) => {
-    const { error } = await supabase.from("players").delete().eq("id", id);
+  delete: async (player) => {
+    const photoPath = player?.player_photo;
+    console.log("photoPath");
+    console.log(photoPath);
+    if (photoPath) {
+      const { error: storageError } = await supabase.storage
+        .from("players-photos")
+        .remove([photoPath]);
+
+      if (storageError) throw storageError;
+    }
+
+    const { error } = await supabase
+      .from("players")
+      .delete()
+      .eq("id", player.id);
     if (error) throw error;
   },
 
