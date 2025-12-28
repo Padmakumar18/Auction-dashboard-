@@ -213,6 +213,7 @@ const Auction = () => {
         status: "sold",
         sold_price: currentBid.amount,
         sold_to: team.id,
+        sold_team: team.team_name,
       });
 
       // console.log("First passed");

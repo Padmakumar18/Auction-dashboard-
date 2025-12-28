@@ -34,8 +34,8 @@ function App() {
     const initAuth = async () => {
       try {
         const user = await authAPI.getCurrentUser();
-        console.log("user");
-        console.log(user);
+        // console.log("user");
+        // console.log(user);
         // const data = await authAPI.login(email, password);
         if (user) {
           setUser(user);

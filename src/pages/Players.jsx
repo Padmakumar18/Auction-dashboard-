@@ -26,6 +26,7 @@ const Players = () => {
     role: "",
     photoFile: null, // holds the raw File object
     existingPhoto: null, // holds Supabase public URL after upload
+    // soldTo: "",
   });
 
   const [helper, setHelper] = useState([]);
@@ -89,8 +90,11 @@ const Players = () => {
       setTeams(getAllTeams);
       setPlayers(getAllPlayers);
 
-      // console.log("players");
-      // console.log(players);
+      console.log("players");
+      console.log(players);
+
+      console.log("teams");
+      console.log(teams);
     } catch (error) {
       console.error("Error loading players:", error);
       toast.error("Failed to load players");
@@ -99,29 +103,20 @@ const Players = () => {
     }
   };
 
-  // const handleOpenModal = (player = null) => {
-  //   if (player) {
-  //     setEditingPlayer(player);
-  //     setFormData({
-  //       name: player.name,
-  //       role: player.role,
-  //       photoLink: player.player_photo,
-  //     });
-  //   } else {
-  //     setEditingPlayer(null);
-  //     setFormData({ name: "", role: "", photoLink: "" });
-  //   }
-  //   setIsModalOpen(true);
-  // };
-
   const handleOpenModal = (player = null) => {
     if (player) {
+      console.log("player");
+      console.log(player);
       setEditingPlayer(player);
+      const matchedRole =
+        roles.find((r) => r.toLowerCase() === player.role.toLowerCase()) || "";
+
       setFormData({
         name: player.name,
-        role: player.role,
-        photoFile: null, // new file if chosen
-        existingPhoto: player.player_photo, // store existing Supabase URL
+        role: matchedRole,
+        photoFile: null,
+        existingPhoto: player.player_photo,
+        // soldTo: player.sold_team,
       });
     } else {
       setEditingPlayer(null);
@@ -130,6 +125,7 @@ const Players = () => {
         role: "",
         photoFile: null,
         existingPhoto: null,
+        // soldTo: "",
       });
     }
     setIsModalOpen(true);
@@ -143,15 +139,13 @@ const Players = () => {
       role: "",
       photoFile: null,
       existingPhoto: null,
+      // soldTo: "",
     });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // -----------------------------
-    // Validation Layer
-    // -----------------------------
     const validationErrors = validatePlayer({
       name: formData.name,
       role: formData.role,
@@ -210,9 +204,6 @@ const Players = () => {
         photoUrl = publicUrlData.publicUrl;
       }
 
-      // -------------------------------------------------
-      // 2. Prepare player object for API
-      // -------------------------------------------------
       const playerData = {
         name: formData.name,
         role: normalizedRole,
@@ -220,9 +211,6 @@ const Players = () => {
         player_photo: photoUrl, // <-- dynamic Supabase URL
       };
 
-      // -------------------------------------------------
-      // 3. Persist to your backend
-      // -------------------------------------------------
       if (editingPlayer) {
         const updated = await playersAPI.update(editingPlayer.id, playerData);
         updatePlayer(editingPlayer.id, updated);
@@ -238,53 +226,6 @@ const Players = () => {
       toast.error(error.message || "Failed to save player");
     }
   };
-
-  // const handleSubmit = async (e) => {
-  //   e.preventDefault();
-
-  //   const validationErrors = validatePlayer({
-  //     name: formData.name,
-  //     role: formData.role,
-  //     // player_photo: formData.photoLink,
-  //     photo_file: formData.photoFile,
-  //   });
-
-  //   if (validationErrors.length > 0) {
-  //     validationErrors.forEach((error) => toast.error(error));
-  //     return;
-  //   }
-
-  //   const ROLE_NORMALIZATION_MAP = {
-  //     Batsman: "batsman",
-  //     Bowler: "bowler",
-  //     "All-Rounder": "allrounder",
-  //     "Wicket-Keeper": "wicketkeeper",
-  //   };
-  //   const normalizedRole = ROLE_NORMALIZATION_MAP[formData.role];
-
-  //   try {
-  //     const playerData = {
-  //       name: formData.name,
-  //       role: normalizedRole,
-  //       base_price: parseInt(helper[0].base_price),
-  //       player_photo: formData.photoLink,
-  //     };
-
-  //     if (editingPlayer) {
-  //       const updated = await playersAPI.update(editingPlayer.id, playerData);
-  //       updatePlayer(editingPlayer.id, updated);
-  //       toast.success("Player updated successfully!");
-  //     } else {
-  //       const created = await playersAPI.create(playerData);
-  //       addPlayer(created);
-  //       toast.success("Player created successfully!");
-  //     }
-
-  //     handleCloseModal();
-  //   } catch (error) {
-  //     toast.error(error.message || "Failed to save player");
-  //   }
-  // };
 
   const handleDelete = async (player) => {
     console.log("row");
@@ -532,6 +473,21 @@ const Players = () => {
             placeholder="Select role"
             required
           />
+          {/* {editingPlayer && (
+            <Select
+              label="Sold to"
+              value={formData.soldTo}
+              onChange={(e) =>
+                setFormData({ ...formData, soldTo: e.target.value })
+              }
+              options={teams.map((r) => ({
+                value: r.id,
+                label: r.team_name,
+              }))}
+              placeholder="Select role"
+              required
+            />
+          )} */}
 
           {/* Preview existing photo */}
           {formData.existingPhoto && (
