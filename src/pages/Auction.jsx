@@ -161,6 +161,14 @@ const Auction = () => {
     const team = teams.find((t) => t.id === selectedTeam);
     const amount = parseInt(bidAmount);
 
+    // console.log("team");
+    // console.log(team);
+
+    if (amount > calculateRecommendedBid(team)) {
+      toast.error("Bid exceeds recommended limit");
+      return;
+    }
+
     if (amount < currentPlayer.base_price) {
       toast.error("Bid amount must be at least the base price");
       return;
@@ -523,10 +531,7 @@ const Auction = () => {
             <div className="space-y-3">
               {teams.map((team) => {
                 const pointsLeft = team.total_points - team.points_used;
-                const recommendedBid = calculateRecommendedBid(
-                  team,
-                  remainingPlayers
-                );
+                const recommendedBid = calculateRecommendedBid(team);
 
                 return (
                   <div key={team.id} className="border-b pb-3 last:border-b-0">

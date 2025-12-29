@@ -190,8 +190,8 @@ const Players = () => {
         // console.log("error");
         // console.log(error);
 
-        console.log("uploadError");
-        console.log(uploadError);
+        // console.log("uploadError");
+        // console.log(uploadError);
 
         if (uploadError) {
           throw new Error("Photo upload failed. Please retry.");
@@ -228,8 +228,6 @@ const Players = () => {
   };
 
   const handleDelete = async (player) => {
-    console.log("row");
-    console.log(player);
     toast(
       (t) => (
         <div className="flex flex-col gap-3">

@@ -17,7 +17,7 @@ import Card from "../components/Card";
 import Loader from "../components/Loader";
 import useStore from "../store/useStore";
 import { teamsAPI, playersAPI } from "../services/api";
-import { formatCurrency } from "../utils/helpers";
+import { formatCurrency, calculateRecommendedBid } from "../utils/helpers";
 
 const Analytics = () => {
   const { teams, players, setTeams, setPlayers } = useStore();
@@ -25,6 +25,8 @@ const Analytics = () => {
 
   useEffect(() => {
     loadData();
+    console.log("teams");
+    console.log(teams);
   }, []);
 
   const loadData = async () => {
@@ -227,6 +229,9 @@ const Analytics = () => {
                     Players
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Remaining Players
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                     Total Points
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
@@ -236,16 +241,20 @@ const Analytics = () => {
                     Points Left
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Usage %
+                    Recommended max points
                   </th>
+                  {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Usage %
+                  </th> */}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {teams.map((team) => {
                   const teamPlayers = team.players_count;
                   const pointsLeft = team.total_points - team.points_used;
-                  const usagePercent =
-                    (team.points_used / team.total_points) * 100;
+                  const balancePlayersCount = team.balance_players_count;
+                  const recommendedMaxPoints = calculateRecommendedBid(team);
+                  // const usagePercent = (team.points_used / team.total_points) * 100;
 
                   return (
                     <tr key={team.id}>
@@ -256,6 +265,9 @@ const Analytics = () => {
                         {teamPlayers}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-gray-900">
+                        {balancePlayersCount}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-gray-900">
                         {formatCurrency(team.total_points)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-gray-900">
@@ -264,7 +276,10 @@ const Analytics = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-green-600 font-semibold">
                         {formatCurrency(pointsLeft)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-6 py-4 whitespace-nowrap text-red-600 font-semibold">
+                        {formatCurrency(recommendedMaxPoints)}
+                      </td>
+                      {/* <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-2">
                           <div className="w-24 bg-gray-200 rounded-full h-2">
                             <div
@@ -276,7 +291,7 @@ const Analytics = () => {
                             {usagePercent.toFixed(1)}%
                           </span>
                         </div>
-                      </td>
+                      </td> */}
                     </tr>
                   );
                 })}

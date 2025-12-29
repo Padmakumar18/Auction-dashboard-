@@ -8,11 +8,18 @@ export const formatCurrency = (amount) => {
 };
 
 // Calculate recommended max bid for a team
-export const calculateRecommendedBid = (team, remainingPlayers) => {
-  if (!team || remainingPlayers <= 0) return 0;
-  const pointsLeft = team.total_points - team.points_used;
-  return Math.floor(pointsLeft / remainingPlayers);
+export const calculateRecommendedBid = (team) => {
+  if (!team) return 0;
+  const pointsLeft = team.points_left - (team.balance_players_count - 1) * 1000;
+  return pointsLeft;
 };
+
+/////// Temp
+// export const calculateRecommendedBid = (team, remainingPlayers) => {
+//   if (!team || remainingPlayers <= 0) return 0;
+//   const pointsLeft = team.total_points - team.points_used;
+//   return Math.floor(pointsLeft / remainingPlayers);
+// };
 
 // Shuffle array (Fisher-Yates algorithm)
 export const shuffleArray = (array) => {
@@ -130,7 +137,7 @@ export const validatePlayer = (player) => {
   // if (!player.player_photo || player.player_photo.trim() === "") {
   //   errors.push("Player photo link is required");
   // }
-  if (!player.photo_file == null) {
+  if (player.photo_file == null) {
     errors.push("Player photo file is required");
   }
 
