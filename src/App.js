@@ -11,6 +11,8 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Teams from "./pages/Teams";
 import Players from "./pages/Players";
+import PlayerRegistration from "./pages/PlayerRegistration";
+import PlayerRegistrationEnhanced from "./pages/PlayerRegistrationEnhanced";
 import Auction from "./pages/Auction";
 import Analytics from "./pages/Analytics";
 import Admin from "./pages/Admin";
@@ -145,6 +147,26 @@ function App() {
             <ProtectedRoute>
               <Layout>
                 <Admin />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/player-registration"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <PlayerRegistration />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/player-registration-enhanced"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <PlayerRegistrationEnhanced />
               </Layout>
             </ProtectedRoute>
           }
