@@ -7,6 +7,8 @@ import {
   BarChart3,
   Settings,
   LogOut,
+  FilesIcon,
+  FileKeyIcon,
 } from "lucide-react";
 import useStore from "../store/useStore";
 
@@ -27,6 +29,16 @@ const Layout = ({ children }) => {
     { path: "/auction", icon: Gavel, label: "Auction" },
     { path: "/analytics", icon: BarChart3, label: "Analytics" },
     { path: "/admin", icon: Settings, label: "Admin" },
+    {
+      path: "/player-registration",
+      icon: FilesIcon,
+      label: "Player Registration",
+    },
+    {
+      path: "/player-registration-enhanced",
+      icon: FileKeyIcon,
+      label: "Player Registration",
+    },
   ];
 
   if (!isAuthenticated) {

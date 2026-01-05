@@ -25,7 +25,8 @@ const Players = () => {
     name: "",
     role: "",
     photoFile: null, // holds the raw File object
-    // photoLink: "", // holds Supabase public URL after upload
+    existingPhoto: null, // holds Supabase public URL after upload
+    // soldTo: "",
   });
 
   const [helper, setHelper] = useState([]);
@@ -89,8 +90,11 @@ const Players = () => {
       setTeams(getAllTeams);
       setPlayers(getAllPlayers);
 
-      // console.log("players");
-      // console.log(players);
+      console.log("players");
+      console.log(players);
+
+      console.log("teams");
+      console.log(teams);
     } catch (error) {
       console.error("Error loading players:", error);
       toast.error("Failed to load players");
@@ -101,15 +105,28 @@ const Players = () => {
 
   const handleOpenModal = (player = null) => {
     if (player) {
+      console.log("player");
+      console.log(player);
       setEditingPlayer(player);
+      const matchedRole =
+        roles.find((r) => r.toLowerCase() === player.role.toLowerCase()) || "";
+
       setFormData({
         name: player.name,
-        role: player.role,
-        photoLink: player.player_photo,
+        role: matchedRole,
+        photoFile: null,
+        existingPhoto: player.player_photo,
+        // soldTo: player.sold_team,
       });
     } else {
       setEditingPlayer(null);
-      setFormData({ name: "", role: "", photoLink: "" });
+      setFormData({
+        name: "",
+        role: "",
+        photoFile: null,
+        existingPhoto: null,
+        // soldTo: "",
+      });
     }
     setIsModalOpen(true);
   };
@@ -117,15 +134,18 @@ const Players = () => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingPlayer(null);
-    setFormData({ name: "", role: "", photoLink: "" });
+    setFormData({
+      name: "",
+      role: "",
+      photoFile: null,
+      existingPhoto: null,
+      // soldTo: "",
+    });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // -----------------------------
-    // Validation Layer
-    // -----------------------------
     const validationErrors = validatePlayer({
       name: formData.name,
       role: formData.role,
@@ -150,7 +170,9 @@ const Players = () => {
       // -------------------------------------------------
       // 1. Upload photo to Supabase bucket
       // -------------------------------------------------
-      let photoUrl = null;
+      // let photoUrl = null;
+
+      let photoUrl = formData.existingPhoto; // default = existing
 
       if (formData.photoFile) {
         const file = formData.photoFile;
@@ -168,8 +190,8 @@ const Players = () => {
         // console.log("error");
         // console.log(error);
 
-        console.log("uploadError");
-        console.log(uploadError);
+        // console.log("uploadError");
+        // console.log(uploadError);
 
         if (uploadError) {
           throw new Error("Photo upload failed. Please retry.");
@@ -182,9 +204,6 @@ const Players = () => {
         photoUrl = publicUrlData.publicUrl;
       }
 
-      // -------------------------------------------------
-      // 2. Prepare player object for API
-      // -------------------------------------------------
       const playerData = {
         name: formData.name,
         role: normalizedRole,
@@ -192,9 +211,6 @@ const Players = () => {
         player_photo: photoUrl, // <-- dynamic Supabase URL
       };
 
-      // -------------------------------------------------
-      // 3. Persist to your backend
-      // -------------------------------------------------
       if (editingPlayer) {
         const updated = await playersAPI.update(editingPlayer.id, playerData);
         updatePlayer(editingPlayer.id, updated);
@@ -211,54 +227,7 @@ const Players = () => {
     }
   };
 
-  // const handleSubmit = async (e) => {
-  //   e.preventDefault();
-
-  //   const validationErrors = validatePlayer({
-  //     name: formData.name,
-  //     role: formData.role,
-  //     // player_photo: formData.photoLink,
-  //     photo_file: formData.photoFile,
-  //   });
-
-  //   if (validationErrors.length > 0) {
-  //     validationErrors.forEach((error) => toast.error(error));
-  //     return;
-  //   }
-
-  //   const ROLE_NORMALIZATION_MAP = {
-  //     Batsman: "batsman",
-  //     Bowler: "bowler",
-  //     "All-Rounder": "allrounder",
-  //     "Wicket-Keeper": "wicketkeeper",
-  //   };
-  //   const normalizedRole = ROLE_NORMALIZATION_MAP[formData.role];
-
-  //   try {
-  //     const playerData = {
-  //       name: formData.name,
-  //       role: normalizedRole,
-  //       base_price: parseInt(helper[0].base_price),
-  //       player_photo: formData.photoLink,
-  //     };
-
-  //     if (editingPlayer) {
-  //       const updated = await playersAPI.update(editingPlayer.id, playerData);
-  //       updatePlayer(editingPlayer.id, updated);
-  //       toast.success("Player updated successfully!");
-  //     } else {
-  //       const created = await playersAPI.create(playerData);
-  //       addPlayer(created);
-  //       toast.success("Player created successfully!");
-  //     }
-
-  //     handleCloseModal();
-  //   } catch (error) {
-  //     toast.error(error.message || "Failed to save player");
-  //   }
-  // };
-
-  const handleDelete = async (id) => {
+  const handleDelete = async (player) => {
     toast(
       (t) => (
         <div className="flex flex-col gap-3">
@@ -280,8 +249,8 @@ const Players = () => {
                 toast.dismiss(t.id);
 
                 try {
-                  await playersAPI.delete(id);
-                  setPlayers(players.filter((p) => p.id !== id));
+                  await playersAPI.delete(player);
+                  setPlayers(players.filter((p) => p.id !== player.id));
                   toast.success("Player deleted successfully!");
                 } catch (error) {
                   toast.error(
@@ -394,7 +363,7 @@ const Players = () => {
             <Edit2 size={16} />
           </button>
           <button
-            onClick={() => handleDelete(row.id)}
+            onClick={() => handleDelete(row)}
             className="text-red-600 hover:text-red-800"
           >
             <Trash2 size={16} />
@@ -502,21 +471,37 @@ const Players = () => {
             placeholder="Select role"
             required
           />
+          {/* {editingPlayer && (
+            <Select
+              label="Sold to"
+              value={formData.soldTo}
+              onChange={(e) =>
+                setFormData({ ...formData, soldTo: e.target.value })
+              }
+              options={teams.map((r) => ({
+                value: r.id,
+                label: r.team_name,
+              }))}
+              placeholder="Select role"
+              required
+            />
+          )} */}
 
-          {/* <Input
-            label="Player photo drive link"
-            type="text"
-            value={formData.photoLink}
-            onChange={(e) =>
-              setFormData({ ...formData, photoLink: e.target.value })
-            }
-            placeholder="Enter base price"
-            required
-          /> */}
+          {/* Preview existing photo */}
+          {formData.existingPhoto && (
+            <div className="mb-4">
+              <p className="text-sm text-gray-600 mb-1">Current Photo:</p>
+              <img
+                src={formData.existingPhoto}
+                alt="Player"
+                className="h-32 w-32 object-cover rounded border"
+              />
+            </div>
+          )}
 
+          {/* Upload new photo */}
           <UploadInput
-            label="Player Photo"
-            required
+            label="Upload New Photo"
             onChange={(e) =>
               setFormData({ ...formData, photoFile: e.target.files[0] })
             }

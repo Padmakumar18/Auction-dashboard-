@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import toast from "react-hot-toast";
 import { Lock, User } from "lucide-react";
 import Button from "../components/Button";
@@ -13,7 +13,18 @@ const Login = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { setUser } = useStore();
+  const location = useLocation();
+  const { setUser, isAuthenticated } = useStore();
+
+  // Get the redirect path from location state, default to "/"
+  const from = location.state?.from?.pathname || "/";
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate(from, { replace: true });
+    }
+  }, [isAuthenticated, navigate, from]);
 
   useEffect(() => {
     const savedEmail = localStorage.getItem("saved_email");
@@ -29,9 +40,6 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    // setPassword(hashMyPassword(password));
-    // console.log("password");
-    // console.log(hashMyPassword(password));
 
     try {
       const data = await authAPI.login(email, password);
@@ -48,7 +56,9 @@ const Login = () => {
       }
 
       toast.success(`Welcome back, ${data.user.full_name || data.user.email}!`);
-      navigate("/");
+
+      // Navigate to the intended destination or dashboard
+      navigate(from, { replace: true });
     } catch (err) {
       toast.error(err.message || "Invalid credentials");
     } finally {

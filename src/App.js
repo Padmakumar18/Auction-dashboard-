@@ -7,10 +7,14 @@ import {
 } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import Layout from "./components/Layout";
+import AuthGuard from "./components/AuthGuard";
+import RedirectHandler from "./components/RedirectHandler";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Teams from "./pages/Teams";
 import Players from "./pages/Players";
+import PlayerRegistration from "./pages/PlayerRegistration";
+import PlayerRegistrationEnhanced from "./pages/PlayerRegistrationEnhanced";
 import Auction from "./pages/Auction";
 import Analytics from "./pages/Analytics";
 import Admin from "./pages/Admin";
@@ -18,12 +22,6 @@ import Loader from "./components/Loader";
 import useStore from "./store/useStore";
 import { authAPI } from "./services/api";
 import { useRealtime } from "./hooks/useRealtime";
-
-// Protected Route Component
-const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated } = useStore();
-  return isAuthenticated ? children : <Navigate to="/login" />;
-};
 
 function App() {
   const { setUser, isAuthenticated } = useStore();
@@ -33,10 +31,27 @@ function App() {
   useEffect(() => {
     const initAuth = async () => {
       try {
-        const user = await authAPI.getCurrentUser();
-        console.log("user");
-        console.log(user);
-        // const data = await authAPI.login(email, password);
+        // First, try to get current user from localStorage
+        let user = await authAPI.getCurrentUser();
+
+        // If no user in localStorage, try auto-login with saved credentials
+        if (!user) {
+          const savedEmail = localStorage.getItem("saved_email");
+          const savedPassword = localStorage.getItem("saved_password");
+
+          if (savedEmail && savedPassword) {
+            try {
+              const data = await authAPI.login(savedEmail, savedPassword);
+              user = data.user;
+            } catch (error) {
+              // If auto-login fails, clear saved credentials
+              console.error("Auto-login failed:", error);
+              localStorage.removeItem("saved_email");
+              localStorage.removeItem("saved_password");
+            }
+          }
+        }
+
         if (user) {
           setUser(user);
         }
@@ -84,6 +99,7 @@ function App() {
           },
         }}
       />
+      <RedirectHandler />
       <Routes>
         {/* Public Routes */}
         <Route path="/login" element={<Login />} />
@@ -92,66 +108,95 @@ function App() {
         <Route
           path="/"
           element={
-            <ProtectedRoute>
+            <AuthGuard>
               <Layout>
                 <Dashboard />
               </Layout>
-            </ProtectedRoute>
+            </AuthGuard>
           }
         />
         <Route
           path="/teams"
           element={
-            <ProtectedRoute>
+            <AuthGuard>
               <Layout>
                 <Teams />
               </Layout>
-            </ProtectedRoute>
+            </AuthGuard>
           }
         />
         <Route
           path="/players"
           element={
-            <ProtectedRoute>
+            <AuthGuard>
               <Layout>
                 <Players />
               </Layout>
-            </ProtectedRoute>
+            </AuthGuard>
           }
         />
         <Route
           path="/auction"
           element={
-            <ProtectedRoute>
+            <AuthGuard>
               <Layout>
                 <Auction />
               </Layout>
-            </ProtectedRoute>
+            </AuthGuard>
           }
         />
         <Route
           path="/analytics"
           element={
-            <ProtectedRoute>
+            <AuthGuard>
               <Layout>
                 <Analytics />
               </Layout>
-            </ProtectedRoute>
+            </AuthGuard>
           }
         />
         <Route
           path="/admin"
           element={
-            <ProtectedRoute>
+            <AuthGuard>
               <Layout>
                 <Admin />
               </Layout>
-            </ProtectedRoute>
+            </AuthGuard>
+          }
+        />
+        <Route
+          path="/player-registration"
+          element={
+            <AuthGuard>
+              <Layout>
+                <PlayerRegistration />
+              </Layout>
+            </AuthGuard>
+          }
+        />
+        <Route
+          path="/player-registration-enhanced"
+          element={
+            <AuthGuard>
+              <Layout>
+                <PlayerRegistrationEnhanced />
+              </Layout>
+            </AuthGuard>
           }
         />
 
-        {/* Catch all - redirect to dashboard */}
-        <Route path="*" element={<Navigate to="/" />} />
+        {/* Catch all - redirect based on auth status */}
+        <Route
+          path="*"
+          element={
+            isAuthenticated ? (
+              <Navigate to="/" replace />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
       </Routes>
     </Router>
   );

@@ -1,4 +1,5 @@
 import { supabase } from "../config/supabase";
+import sessionManager from "../utils/sessionManager";
 
 // Teams API
 export const teamsAPI = {
@@ -114,8 +115,22 @@ export const playersAPI = {
     return data;
   },
 
-  delete: async (id) => {
-    const { error } = await supabase.from("players").delete().eq("id", id);
+  delete: async (player) => {
+    const photoPath = player?.player_photo;
+    console.log("photoPath");
+    console.log(photoPath);
+    if (photoPath) {
+      const { error: storageError } = await supabase.storage
+        .from("players-photos")
+        .remove([photoPath]);
+
+      if (storageError) throw storageError;
+    }
+
+    const { error } = await supabase
+      .from("players")
+      .delete()
+      .eq("id", player.id);
     if (error) throw error;
   },
 
@@ -266,6 +281,9 @@ export const authAPI = {
       // Store user in localStorage for session management
       localStorage.setItem("admin_user", JSON.stringify(users));
 
+      // Initialize session timestamp
+      sessionManager.initSession();
+
       return { user: users };
     } catch (error) {
       console.error("Login error:", error);
@@ -281,14 +299,25 @@ export const authAPI = {
     localStorage.removeItem("saved_email");
     localStorage.removeItem("saved_password");
 
+    // Clear session timestamp
+    sessionManager.clearSession();
+
     return Promise.resolve();
   },
 
   getCurrentUser: async () => {
+    // Check if session is valid
+    if (!sessionManager.isSessionValid()) {
+      sessionManager.clearSession();
+      return null;
+    }
+
     // Get user from localStorage
     const userStr = localStorage.getItem("admin_user");
     if (userStr) {
       try {
+        // Refresh session timestamp on access
+        sessionManager.refreshSession();
         return JSON.parse(userStr);
       } catch (e) {
         return null;

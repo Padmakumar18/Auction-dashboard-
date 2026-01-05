@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Cricket Auction - Redirecting...</title>
+    <script>
+      // Netlify SPA redirect handler
+      // This script redirects all 404s to index.html with the original path preserved
+      sessionStorage.setItem(
+        "redirectPath",
+        window.location.pathname + window.location.search
+      );
+      window.location.replace("/");
+    </script>
+  </head>
+  <body>
+    <p>Redirecting...</p>
+  </body>
+</html>

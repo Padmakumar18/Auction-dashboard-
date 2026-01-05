@@ -34,6 +34,7 @@ const Admin = () => {
           status: "available",
           sold_price: null,
           sold_to: null,
+          sold_team: null,
         })
       );
 
