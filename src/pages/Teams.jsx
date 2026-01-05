@@ -11,7 +11,7 @@ import { teamsAPI, playersAPI, helperAPI } from "../services/api";
 import { formatCurrency, validateTeam } from "../utils/helpers";
 
 const Teams = () => {
-  const { teams, setTeams, addTeam, updateTeam } = useStore();
+  const { players, teams, setTeams, addTeam, updateTeam } = useStore();
   const [helper, setHelper] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -26,6 +26,8 @@ const Teams = () => {
   const [isPlayersModalOpen, setIsPlayersModalOpen] = useState(false);
   const [selectedTeamPlayers, setSelectedTeamPlayers] = useState([]);
   const [selectedTeamName, setSelectedTeamName] = useState("");
+  const [isTeamDetailsModalOpen, setIsTeamDetailsModalOpen] = useState(false);
+  const [selectedTeamDetails, setSelectedTeamDetails] = useState(null);
 
   useEffect(() => {
     loadTeams();
@@ -80,6 +82,16 @@ const Teams = () => {
       setFormData({ name: "", total_points: "" });
     }
     setIsModalOpen(true);
+  };
+
+  const handleViewTeamDetails = (team) => {
+    setSelectedTeamDetails(team);
+    setIsTeamDetailsModalOpen(true);
+  };
+
+  const closeTeamDetailsModal = () => {
+    setIsTeamDetailsModalOpen(false);
+    setSelectedTeamDetails(null);
   };
 
   const handleCloseModal = () => {
@@ -243,16 +255,24 @@ const Teams = () => {
 
                   <div className="flex gap-2">
                     <button
-                      onClick={() => handleOpenModal(team)}
-                      className="text-blue-600 hover:text-blue-800"
+                      onClick={() => handleViewTeamDetails(team)}
+                      className="text-white bg-green-500 px-4 py-1 rounded text-md"
+                      title="View Team Details"
                     >
-                      <Edit2 size={18} />
+                      Team Info
+                    </button>
+                    <button
+                      onClick={() => handleOpenModal(team)}
+                      className="text-white bg-blue-500 px-4 rounded text-md"
+                    >
+                      {/* <Edit2 size={18} /> */}
+                      Edit
                     </button>
                     <button
                       onClick={() => handleDelete(team.id)}
                       className="text-red-600 hover:text-red-800"
                     >
-                      <Trash2 size={18} />
+                      <Trash2 size={20} />
                     </button>
                   </div>
                 </div>
@@ -319,6 +339,92 @@ const Teams = () => {
           })}
       </div>
 
+      <Modal
+        isOpen={isTeamDetailsModalOpen}
+        onClose={closeTeamDetailsModal}
+        title={`Team Details - ${selectedTeamDetails?.team_name}`}
+        size="md"
+      >
+        {selectedTeamDetails && (
+          <div className="w-full">
+            <table className="w-full text-sm">
+              <tbody className="divide-y divide-transparent">
+                <tr>
+                  <td className="py-2 font-medium text-gray-600">
+                    Total Points
+                  </td>
+                  <td className="py-2 font-semibold text-gray-900">
+                    {formatCurrency(selectedTeamDetails.total_points)}
+                  </td>
+                </tr>
+
+                <tr>
+                  <td className="py-2 font-medium text-gray-600">
+                    Points Used
+                  </td>
+                  <td className="py-2 font-semibold text-gray-900">
+                    {formatCurrency(selectedTeamDetails.points_used)}
+                  </td>
+                </tr>
+
+                <tr>
+                  <td className="py-2 font-medium text-gray-600">
+                    Points Left
+                  </td>
+                  <td className="py-2 font-semibold text-green-700">
+                    {formatCurrency(
+                      selectedTeamDetails.total_points -
+                        selectedTeamDetails.points_used
+                    )}
+                  </td>
+                </tr>
+
+                <tr>
+                  <td className="py-2 font-medium text-gray-600">
+                    Players Count
+                  </td>
+                  <td className="py-2 font-semibold text-gray-900">
+                    {selectedTeamDetails.players_count}
+                  </td>
+                </tr>
+
+                <tr>
+                  <td className="py-2 font-medium text-gray-600">
+                    Remaining Players
+                  </td>
+                  <td className="py-2 font-semibold text-gray-900">
+                    {selectedTeamDetails.balance_players_count}
+                  </td>
+                </tr>
+
+                <tr>
+                  <td className="py-2 font-medium text-gray-600">
+                    Max Players
+                  </td>
+                  <td className="py-2 font-semibold text-gray-900">
+                    {selectedTeamDetails.max_players}
+                  </td>
+                </tr>
+
+                {/* {selectedTeamDetails.retain_player && ( */}
+                <tr>
+                  <td className="py-2 font-medium text-gray-600">
+                    Retained Player
+                  </td>
+                  <td className="py-2 font-semibold text-red-600">
+                    {players.filter(
+                      (t) => t.id === selectedTeamDetails.retain_player
+                    ).name ?? "-"}
+                    {/* const team = teams.find((t) => t.id === selectedTeam); */}
+                  </td>
+                </tr>
+                {/* )} */}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Modal>
+
       {teams && teams.length === 0 && (
         <div className="flex flex-col items-center justify-center min-h-[300px] text-gray-400">
           <p className="text-lg font-medium">No teams available</p>
@@ -377,6 +483,16 @@ const Teams = () => {
                 {selectedTeamName?.retain_player === player.id && (
                   <p className="font-bold text-red-600">Retain Player</p>
                 )}
+
+                {/* Player Photo */}
+                {/* Player Photo */}
+                <div className="w-40 h-40 mb-4 rounded-lg overflow-hidden border bg-gray-100 flex items-center justify-center">
+                  <img
+                    src={player.player_photo}
+                    alt={player.name}
+                    className="w-full h-full object-contain"
+                  />
+                </div>
 
                 <p className="font-bold text-gray-900">{player.name}</p>
                 <p className="text-sm text-gray-600">Role: {player.role}</p>
