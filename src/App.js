@@ -1,3 +1,25 @@
+/**
+ * Main Application Component
+ *
+ * ROUTING ARCHITECTURE:
+ * - Public Standalone Routes: No auth, no layout (e.g., /login, /register)
+ * - Protected Routes with Layout: Auth required, includes sidebar/header (e.g., /teams, /players)
+ *
+ * RESPONSIVE DESIGN:
+ * - Mobile: Hamburger menu navigation
+ * - Desktop: Fixed sidebar navigation
+ *
+ * ACCESS CONTROL:
+ * - Route configuration in src/config/routes.js
+ * - AuthGuard handles authentication checks
+ * - RouteWrapper determines layout rendering
+ *
+ * PUBLIC PLAYER REGISTRATION:
+ * - /register or /player-registration-public
+ * - No authentication required
+ * - Standalone page (no navigation/header/footer)
+ */
+
 import { useEffect, useState } from "react";
 import {
   BrowserRouter as Router,
@@ -6,14 +28,14 @@ import {
   Navigate,
 } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
-import Layout from "./components/Layout";
-import AuthGuard from "./components/AuthGuard";
+import RouteWrapper from "./components/RouteWrapper";
 import RedirectHandler from "./components/RedirectHandler";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Teams from "./pages/Teams";
 import Players from "./pages/Players";
 import PlayerRegistration from "./pages/PlayerRegistration";
+import PlayerRegistrationPublic from "./pages/PlayerRegistrationPublic";
 import PlayerRegistrationEnhanced from "./pages/PlayerRegistrationEnhanced";
 import Auction from "./pages/Auction";
 import Analytics from "./pages/Analytics";
@@ -101,88 +123,77 @@ function App() {
       />
       <RedirectHandler />
       <Routes>
-        {/* Public Routes */}
+        {/* Public Standalone Routes */}
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<PlayerRegistrationPublic />} />
+        <Route
+          path="/player-registration-public"
+          element={<PlayerRegistrationPublic />}
+        />
 
-        {/* Protected Routes */}
+        {/* Protected Routes with Layout */}
         <Route
           path="/"
           element={
-            <AuthGuard>
-              <Layout>
-                <Dashboard />
-              </Layout>
-            </AuthGuard>
+            <RouteWrapper>
+              <Dashboard />
+            </RouteWrapper>
           }
         />
         <Route
           path="/teams"
           element={
-            <AuthGuard>
-              <Layout>
-                <Teams />
-              </Layout>
-            </AuthGuard>
+            <RouteWrapper>
+              <Teams />
+            </RouteWrapper>
           }
         />
         <Route
           path="/players"
           element={
-            <AuthGuard>
-              <Layout>
-                <Players />
-              </Layout>
-            </AuthGuard>
+            <RouteWrapper>
+              <Players />
+            </RouteWrapper>
           }
         />
         <Route
           path="/auction"
           element={
-            <AuthGuard>
-              <Layout>
-                <Auction />
-              </Layout>
-            </AuthGuard>
+            <RouteWrapper>
+              <Auction />
+            </RouteWrapper>
           }
         />
         <Route
           path="/analytics"
           element={
-            <AuthGuard>
-              <Layout>
-                <Analytics />
-              </Layout>
-            </AuthGuard>
+            <RouteWrapper>
+              <Analytics />
+            </RouteWrapper>
           }
         />
         <Route
           path="/admin"
           element={
-            <AuthGuard>
-              <Layout>
-                <Admin />
-              </Layout>
-            </AuthGuard>
+            <RouteWrapper>
+              <Admin />
+            </RouteWrapper>
           }
         />
         <Route
           path="/player-registration"
           element={
-            <AuthGuard>
-              <Layout>
-                <PlayerRegistration />
-              </Layout>
-            </AuthGuard>
+            <RouteWrapper>
+              <PlayerRegistration />
+            </RouteWrapper>
           }
         />
         <Route
           path="/player-registration-enhanced"
           element={
-            <AuthGuard>
-              <Layout>
-                <PlayerRegistrationEnhanced />
-              </Layout>
-            </AuthGuard>
+            <RouteWrapper>
+              <PlayerRegistrationEnhanced />
+            </RouteWrapper>
           }
         />
 

@@ -1,0 +1,122 @@
+ROUTING FLOW DIAGRAM
+====================
+
+USER ACCESSES A ROUTE
+         |
+         v
+    RouteWrapper
+         |
+         v
+   Check Route Type
+         |
+    _____|_____
+   |           |
+   v           v
+CONDITIONAL  OTHER
+   |           |
+   |           v
+   |      Is Standalone?
+   |           |
+   |      _____|_____
+   |     |           |
+   |     v           v
+   |    YES         NO
+   |     |           |
+   |     v           v
+   |  Is Public?  Is Public?
+   |     |           |
+   |  ___|___     ___|___
+   | |       |   |       |
+   | v       v   v       v
+   |YES     NO  YES     NO
+   | |       |   |       |
+   | v       v   v       v
+   |No     Auth  Layout  Auth+
+   |Layout  +No  Only    Layout
+   |        Layout
+   |
+   v
+Is User Logged In?
+   |
+___|___
+|      |
+v      v
+YES    NO
+|      |
+v      v
+Show   Show
+With   Without
+Layout Layout
+
+
+EXAMPLES:
+=========
+
+1. /login (Public Standalone)
+   User → RouteWrapper → Standalone + Public → No Layout, No Auth
+
+2. /register (Public Standalone)
+   User → RouteWrapper → Standalone + Public → No Layout, No Auth
+
+3. /teams (Protected with Layout)
+   User → RouteWrapper → Not Standalone, Protected → Auth Required + Layout
+
+4. /player-registration (Conditional)
+   Logged In User → RouteWrapper → Conditional → Show WITH Layout
+   Not Logged In → RouteWrapper → Conditional → Show WITHOUT Layout
+
+5. /player-registration-enhanced (Conditional)
+   Logged In User → RouteWrapper → Conditional → Show WITH Layout
+   Not Logged In → RouteWrapper → Conditional → Show WITHOUT Layout
+
+
+CONDITIONAL ROUTE BEHAVIOR:
+===========================
+
+Route: /player-registration
+
+Scenario 1: User is LOGGED IN
+┌─────────────────────────────────────┐
+│  ┌───────────────────────────────┐  │
+│  │  Hamburger Menu / Sidebar     │  │
+│  │  - Dashboard                  │  │
+│  │  - Teams                      │  │
+│  │  - Players                    │  │
+│  │  - Auction                    │  │
+│  │  - Analytics                  │  │
+│  │  - Admin                      │  │
+│  └───────────────────────────────┘  │
+│                                     │
+│  ┌───────────────────────────────┐  │
+│  │  Player Registration Form     │  │
+│  │  [All form fields...]         │  │
+│  └───────────────────────────────┘  │
+└─────────────────────────────────────┘
+
+Scenario 2: User is NOT LOGGED IN
+┌─────────────────────────────────────┐
+│  Player Registration Form           │
+│  [All form fields...]               │
+│  (No navigation, no sidebar)        │
+└─────────────────────────────────────┘
+
+
+USE CASES:
+==========
+
+1. Admin registering a player:
+   - Logs in first
+   - Navigates to /player-registration
+   - Sees full dashboard with navigation
+   - Can easily switch to other pages
+
+2. Public user registering:
+   - Goes directly to /player-registration
+   - Sees only the form (no distractions)
+   - Clean, focused experience
+   - No login required
+
+3. Sharing registration link:
+   - Share /player-registration URL
+   - Works for both logged-in admins and public users
+   - Adapts automatically based on auth status
