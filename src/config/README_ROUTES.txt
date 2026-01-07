@@ -8,12 +8,12 @@ PUBLIC ROUTES (No Authentication Required):
 - /login - Login page
 - /register - Public player registration (standalone, no layout)
 - /player-registration-public - Alternative URL for public registration
+- /teams - Teams page (accessible to everyone)
+- /players - Players page (accessible to everyone)
 
 PROTECTED ROUTES (Authentication Required):
 -------------------------------------------
 - / - Dashboard
-- /teams - Teams management
-- /players - Players management
 - /auction - Auction page
 - /analytics - Analytics dashboard
 - /admin - Admin panel
@@ -22,10 +22,12 @@ CONDITIONAL ROUTES (Layout depends on authentication):
 ------------------------------------------------------
 - /player-registration - Shows layout if logged in, no layout if not logged in
 - /player-registration-enhanced - Shows layout if logged in, no layout if not logged in
+- /teams - Shows layout if logged in, no layout if not logged in
+- /players - Shows layout if logged in, no layout if not logged in
 
 These routes are accessible to BOTH authenticated and non-authenticated users:
 - If user is LOGGED IN: Shows with full layout (sidebar, header, navigation)
-- If user is NOT LOGGED IN: Shows standalone (no layout, just the form)
+- If user is NOT LOGGED IN: Shows with limited layout (only Teams & Players in menu)
 
 STANDALONE ROUTES (No Layout - Header/Sidebar/Footer):
 ------------------------------------------------------

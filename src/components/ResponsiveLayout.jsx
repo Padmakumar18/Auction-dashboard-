@@ -18,7 +18,7 @@ import useStore from "../store/useStore";
 const ResponsiveLayout = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout } = useStore();
+  const { user, logout, isAuthenticated } = useStore();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const handleLogout = () => {
@@ -26,7 +26,8 @@ const ResponsiveLayout = ({ children }) => {
     navigate("/login");
   };
 
-  const navItems = [
+  // Full navigation for authenticated users
+  const fullNavItems = [
     { path: "/", icon: Home, label: "Dashboard" },
     { path: "/teams", icon: Users, label: "Teams" },
     { path: "/players", icon: UserCircle, label: "Players" },
@@ -44,6 +45,15 @@ const ResponsiveLayout = ({ children }) => {
       label: "Player Registration",
     },
   ];
+
+  // Limited navigation for non-authenticated users (only Teams and Players)
+  const limitedNavItems = [
+    { path: "/teams", icon: Users, label: "Teams" },
+    { path: "/players", icon: UserCircle, label: "Players" },
+  ];
+
+  // Choose navigation items based on authentication status
+  const navItems = isAuthenticated ? fullNavItems : limitedNavItems;
 
   const closeSidebar = () => setIsSidebarOpen(false);
 
@@ -75,7 +85,11 @@ const ResponsiveLayout = ({ children }) => {
         className={`
           fixed top-0 left-0 h-full w-64 bg-white shadow-lg z-50 transform transition-transform duration-300 ease-in-out
           ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
-          lg:translate-x-0
+          ${
+            isAuthenticated
+              ? "lg:translate-x-0"
+              : "lg:-translate-x-full lg:hidden"
+          }
         `}
       >
         {/* Desktop Header */}
@@ -122,29 +136,41 @@ const ResponsiveLayout = ({ children }) => {
         </nav>
 
         {/* User Info & Logout */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-white">
-          {user && (
-            <div className="mb-3 px-4 py-2 bg-blue-50 rounded-lg">
-              <p className="text-xs text-gray-600">Logged in as</p>
-              <p className="text-sm font-semibold text-gray-900 truncate">
-                {user.full_name || user.email}
-              </p>
-              <p className="text-xs text-blue-600 capitalize">{user.role}</p>
-            </div>
-          )}
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-3 px-4 py-3 w-full text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-          >
-            <LogOut size={20} />
-            <span className="font-medium">Logout</span>
-          </button>
-        </div>
+        {isAuthenticated && (
+          <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-white">
+            {user && (
+              <div className="mb-3 px-4 py-2 bg-blue-50 rounded-lg">
+                <p className="text-xs text-gray-600">Logged in as</p>
+                <p className="text-sm font-semibold text-gray-900 truncate">
+                  {user.full_name || user.email}
+                </p>
+                <p className="text-xs text-blue-600 capitalize">{user.role}</p>
+              </div>
+            )}
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-3 px-4 py-3 w-full text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+            >
+              <LogOut size={20} />
+              <span className="font-medium">Logout</span>
+            </button>
+          </div>
+        )}
       </aside>
 
       {/* Main Content */}
-      <main className="lg:ml-64 pt-16 lg:pt-0 min-h-screen">
-        <div className="p-4 sm:p-6 lg:p-8">{children}</div>
+      <main
+        className={`min-h-screen ${
+          isAuthenticated ? "lg:ml-64 pt-16 lg:pt-0" : "pt-16"
+        }`}
+      >
+        <div
+          className={`p-4 sm:p-6 lg:p-8 ${
+            !isAuthenticated ? "max-w-7xl mx-auto" : ""
+          }`}
+        >
+          {children}
+        </div>
       </main>
     </div>
   );

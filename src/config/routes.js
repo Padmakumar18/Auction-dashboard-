@@ -11,17 +11,28 @@
 
 export const routeConfig = {
   // Public routes - accessible without authentication
-  public: ["/login", "/register", "/player-registration-public"],
+  public: [
+    "/login",
+    "/register",
+    "/player-registration-public",
+    "/teams",
+    "/players",
+  ],
 
   // Protected routes - require authentication
-  protected: ["/", "/teams", "/players", "/auction", "/analytics", "/admin"],
+  protected: ["/", "/auction", "/analytics", "/admin"],
 
   // Standalone routes - no layout (header, sidebar, footer)
   standalone: ["/login", "/register", "/player-registration-public"],
 
   // Conditional routes - show layout if logged in, no layout if not logged in
   // These routes are accessible to both authenticated and non-authenticated users
-  conditional: ["/player-registration", "/player-registration-enhanced"],
+  conditional: [
+    "/player-registration",
+    "/player-registration-enhanced",
+    "/teams",
+    "/players",
+  ],
 };
 
 /**

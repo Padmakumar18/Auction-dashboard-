@@ -14,8 +14,15 @@ import { playersAPI, teamsAPI, helperAPI } from "../services/api";
 import { formatCurrency, validatePlayer, parseCSV } from "../utils/helpers";
 
 const Players = () => {
-  const { teams, setTeams, players, setPlayers, addPlayer, updatePlayer } =
-    useStore();
+  const {
+    teams,
+    setTeams,
+    players,
+    setPlayers,
+    addPlayer,
+    updatePlayer,
+    isAuthenticated,
+  } = useStore();
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -44,6 +51,17 @@ const Players = () => {
     loadHelper();
   }, []);
 
+  // Auto-refresh every 15 seconds when not logged in
+  useEffect(() => {
+    if (!isAuthenticated) {
+      const interval = setInterval(() => {
+        loadData();
+      }, 15000); // 15 seconds
+
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated]);
+
   useEffect(() => {
     const unsoldPlayersCount = players
       ? players.filter((p) => p.status === "unsold")
@@ -67,7 +85,9 @@ const Players = () => {
   }, [players]);
 
   const loadHelper = async () => {
-    setLoading(true);
+    if (isAuthenticated) {
+      setLoading(true);
+    }
     try {
       const data = await helperAPI.getAll();
       setHelper(data);
@@ -76,15 +96,22 @@ const Players = () => {
       // console.log(helper);
     } catch (error) {
       console.error("Helper load failed:", error);
-      toast.error("Failed to load helper");
+      if (isAuthenticated) {
+        toast.error("Failed to load helper");
+      }
     } finally {
-      setLoading(false);
+      if (isAuthenticated) {
+        setLoading(false);
+      }
     }
   };
 
   const loadData = async () => {
     try {
-      setLoading(true);
+      // Only show loading spinner if authenticated
+      if (isAuthenticated) {
+        setLoading(true);
+      }
       const getAllPlayers = await playersAPI.getAll();
       const getAllTeams = await teamsAPI.getAll();
       setTeams(getAllTeams);
@@ -97,9 +124,13 @@ const Players = () => {
       console.log(teams);
     } catch (error) {
       console.error("Error loading players:", error);
-      toast.error("Failed to load players");
+      if (isAuthenticated) {
+        toast.error("Failed to load players");
+      }
     } finally {
-      setLoading(false);
+      if (isAuthenticated) {
+        setLoading(false);
+      }
     }
   };
 
@@ -352,75 +383,97 @@ const Players = () => {
       render: (row) =>
         teams.find((t) => t.id === row.sold_to)?.team_name || "-",
     },
-    {
-      header: "Actions",
-      render: (row) => (
-        <div className="flex gap-2">
-          <button
-            onClick={() => handleOpenModal(row)}
-            className="text-blue-600 hover:text-blue-800"
-          >
-            <Edit2 size={16} />
-          </button>
-          <button
-            onClick={() => handleDelete(row)}
-            className="text-red-600 hover:text-red-800"
-          >
-            <Trash2 size={16} />
-          </button>
-        </div>
-      ),
-    },
+    // Only show Actions column if user is authenticated
+    ...(isAuthenticated
+      ? [
+          {
+            header: "Actions",
+            render: (row) => (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleOpenModal(row)}
+                  className="text-blue-600 hover:text-blue-800"
+                >
+                  <Edit2 size={16} />
+                </button>
+                <button
+                  onClick={() => handleDelete(row)}
+                  className="text-red-600 hover:text-red-800"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            ),
+          },
+        ]
+      : []),
   ];
 
-  if (loading) return <Loader fullScreen />;
+  // Only show loader when authenticated
+  if (loading && isAuthenticated) return <Loader fullScreen />;
 
   return (
     <div>
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Players Management</h1>
-        <div className="flex gap-3">
-          {/* <Button variant="outline" onClick={() => setIsUploadModalOpen(true)}>
-            <Upload size={20} className="inline mr-2" />
-            Upload CSV
-          </Button> */}
-          <Button onClick={() => handleOpenModal()}>
-            <Plus size={20} className="inline mr-2" />
-            Add Player
-          </Button>
-        </div>
+        {isAuthenticated && (
+          <div className="flex gap-3">
+            {/* <Button variant="outline" onClick={() => setIsUploadModalOpen(true)}>
+              <Upload size={20} className="inline mr-2" />
+              Upload CSV
+            </Button> */}
+            <Button onClick={() => handleOpenModal()}>
+              <Plus size={20} className="inline mr-2" />
+              Add Player
+            </Button>
+          </div>
+        )}
       </div>
-      <div className="flex justify-between items-center mb-8">
-        <p className="text-lg text-gray-900">
-          Total Players - {players ? players.length : 0}
-        </p>
-        <p className="text-lg text-gray-900">
-          Available Players - {availablePlayersCount}
-        </p>
-        <p className="text-lg text-gray-900">
-          Sold Players - {soldPlayersCount}
-        </p>
-        <p className="text-lg text-gray-900">
-          Unsold Players - {unsoldPlayersCount}
-        </p>
+
+      {/* Stats Section - Responsive Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="bg-white p-4 rounded-lg shadow-md">
+          <p className="text-sm text-gray-600 mb-1">Total Players</p>
+          <p className="text-2xl font-bold text-gray-900">
+            {players ? players.length : 0}
+          </p>
+        </div>
+        <div className="bg-white p-4 rounded-lg shadow-md">
+          <p className="text-sm text-gray-600 mb-1">Available</p>
+          <p className="text-2xl font-bold text-blue-600">
+            {availablePlayersCount}
+          </p>
+        </div>
+        <div className="bg-white p-4 rounded-lg shadow-md">
+          <p className="text-sm text-gray-600 mb-1">Sold</p>
+          <p className="text-2xl font-bold text-green-600">
+            {soldPlayersCount}
+          </p>
+        </div>
+        <div className="bg-white p-4 rounded-lg shadow-md">
+          <p className="text-sm text-gray-600 mb-1">Unsold</p>
+          <p className="text-2xl font-bold text-red-600">
+            {unsoldPlayersCount}
+          </p>
+        </div>
       </div>
 
       {/* Filters */}
       <div className="bg-white p-4 rounded-lg shadow-md mb-6">
-        <div className="flex items-center gap-4">
-          <Filter size={20} className="text-gray-600" />
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <Filter size={20} className="text-gray-600 hidden sm:block" />
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by player name"
-            className="mb-0 flex-1"
+            className="mb-0 flex-1 w-full"
           />
           <Select
             value={filterRole}
             onChange={(e) => setFilterRole(e.target.value)}
             options={roles.map((r) => ({ value: r, label: r }))}
             placeholder="Filter by Role"
-            className="mb-0 flex-1"
+            className="mb-0 flex-1 w-full sm:w-auto"
           />
           <Select
             value={filterStatus}
@@ -430,7 +483,7 @@ const Players = () => {
               { value: "sold", label: "Sold" },
             ]}
             placeholder="Filter by Status"
-            className="mb-0 flex-1"
+            className="mb-0 flex-1 w-full sm:w-auto"
           />
           <Button
             variant="outline"
@@ -439,13 +492,14 @@ const Players = () => {
               setFilterStatus("");
               setSearchQuery("");
             }}
+            className="w-full sm:w-auto"
           >
             Clear
           </Button>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-md">
+      <div className="bg-white rounded-lg shadow-md overflow-x-auto">
         <Table columns={columns} data={filteredPlayers} />
       </div>
 
