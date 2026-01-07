@@ -18,6 +18,7 @@ const PlayerRegistration = () => {
     location: "",
     jersey_size: "",
     jersey_number: "",
+    phone_number: "",
     role: "",
   });
 
@@ -205,9 +206,6 @@ const PlayerRegistration = () => {
       setPreviews({ playerPhoto: null, paymentProof: null });
 
       // Navigate to players page after a short delay
-      setTimeout(() => {
-        navigate("/players");
-      }, 1500);
     } catch (error) {
       console.error("Registration error:", error);
       showError(error.message || "Registration failed. Please try again.");

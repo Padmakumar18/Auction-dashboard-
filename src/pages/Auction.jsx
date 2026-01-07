@@ -52,8 +52,8 @@ const Auction = () => {
 
   useEffect(() => {
     if (currentPlayer) {
-      console.log("CurrentPlayer");
-      console.log(currentPlayer);
+      // console.log("CurrentPlayer");
+      // console.log(currentPlayer);
     }
   }, [currentPlayer]);
 
@@ -210,6 +210,8 @@ const Auction = () => {
     }
 
     const team = teams.find((t) => t.id === currentBid.team_id);
+    // console.log("team");
+    // console.log(team);
 
     if (team.players_count === team.max_players) {
       toast.error("Maximum player reached");
@@ -263,12 +265,36 @@ const Auction = () => {
       });
 
       // Reset auction state
+
+      // toast.success("Player sold successfully!");
+      toast.success(
+        `Player has been successfully sold to ${team.team_name} for a price of ${bidAmount}`,
+        {
+          style: {
+            padding: "20px 25px",
+            background: "rgba(255, 255, 255, 0.85)",
+            borderRadius: "14px",
+            backdropFilter: "blur(8px)",
+            border: "1px solid rgba(255,255,255,0.15)",
+            color: "#000000ff",
+            fontSize: "20px",
+            fontWeight: 500,
+            textAlign: "center",
+            boxShadow:
+              "0 4px 12px rgba(0,0,0,0.4), inset 0 0 12px rgba(255, 170, 65, 0.25)",
+          },
+
+          iconTheme: {
+            primary: "#00b828ff",
+            secondary: "#1a1a1a",
+          },
+        }
+      );
+
       setCurrentPlayer(null);
       setCurrentBid(null);
       setBidAmount("");
       setSelectedTeam("");
-
-      toast.success("Player sold successfully!");
     } catch (error) {
       toast.error("Failed to finalize sale: " + error.message);
     }
@@ -454,7 +480,10 @@ const Auction = () => {
                               value={team.id}
                               checked={isSelected}
                               onChange={() => setSelectedTeam(team.id)}
-                              disabled={isAuctionLocked}
+                              disabled={
+                                isAuctionLocked ||
+                                team.players_count === team.max_players
+                              }
                               className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                             />
 

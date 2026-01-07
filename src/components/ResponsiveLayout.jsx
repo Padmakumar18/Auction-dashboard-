@@ -53,6 +53,9 @@ const ResponsiveLayout = ({ children }) => {
   ];
 
   // Choose navigation items based on authentication status
+  // console.log("isAuthenticated");
+  // console.log(isAuthenticated);
+
   const navItems = isAuthenticated ? fullNavItems : limitedNavItems;
 
   const closeSidebar = () => setIsSidebarOpen(false);

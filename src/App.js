@@ -35,7 +35,6 @@ import Dashboard from "./pages/Dashboard";
 import Teams from "./pages/Teams";
 import Players from "./pages/Players";
 import PlayerRegistration from "./pages/PlayerRegistration";
-import PlayerRegistrationPublic from "./pages/PlayerRegistrationPublic";
 import PlayerRegistrationEnhanced from "./pages/PlayerRegistrationEnhanced";
 import Auction from "./pages/Auction";
 import Analytics from "./pages/Analytics";
@@ -125,11 +124,11 @@ function App() {
       <Routes>
         {/* Public Standalone Routes */}
         <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<PlayerRegistrationPublic />} />
-        <Route
+        <Route path="/player-register" element={<PlayerRegistration />} />
+        {/* <Route
           path="/player-registration-public"
-          element={<PlayerRegistrationPublic />}
-        />
+          element={<PlayerRegistration />}
+        /> */}
 
         {/* Protected Routes with Layout */}
         <Route
