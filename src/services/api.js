@@ -81,6 +81,8 @@ export const playersAPI = {
   },
 
   create: async (player) => {
+    console.log("player ");
+    console.log(player);
     player.role = player.role.toLowerCase();
 
     // console.log("updates");

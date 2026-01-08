@@ -136,8 +136,8 @@ const Players = () => {
 
   const handleOpenModal = (player = null) => {
     if (player) {
-      console.log("player");
-      console.log(player);
+      // console.log("player");
+      // console.log(player);
       setEditingPlayer(player);
       const matchedRole =
         roles.find((r) => r.toLowerCase() === player.role.toLowerCase()) || "";
@@ -210,7 +210,7 @@ const Players = () => {
         // console.log("file");
         // console.log(file);
 
-        const filePath = `players/${Date.now()}_${file.name}`;
+        const filePath = `player_photo/${Date.now()}_${file.name}`;
         // console.log("filePath");
         // console.log(filePath);
 
@@ -481,6 +481,7 @@ const Players = () => {
             options={[
               { value: "unsold", label: "Unsold" },
               { value: "sold", label: "Sold" },
+              { value: "available", label: "Available" },
             ]}
             placeholder="Filter by Status"
             className="mb-0 flex-1 w-full sm:w-auto"

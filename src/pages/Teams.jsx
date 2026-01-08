@@ -8,7 +8,11 @@ import Input from "../components/Input";
 import Loader from "../components/Loader";
 import useStore from "../store/useStore";
 import { teamsAPI, playersAPI, helperAPI } from "../services/api";
-import { formatCurrency, validateTeam } from "../utils/helpers";
+import {
+  formatCurrency,
+  validateTeam,
+  calculateRecommendedBid,
+} from "../utils/helpers";
 
 const Teams = () => {
   const { players, teams, setTeams, addTeam, updateTeam, isAuthenticated } =
@@ -347,6 +351,14 @@ const Teams = () => {
                       {formatCurrency(pointsLeft)}
                     </span>
                   </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">
+                      Recommended Max Points :
+                    </span>
+                    <span className="font-semibold text-red-600">
+                      {formatCurrency(calculateRecommendedBid(team))}
+                    </span>
+                  </div>
 
                   <div className="mt-4">
                     <div className="w-full bg-gray-200 rounded-full h-3">
@@ -392,6 +404,14 @@ const Teams = () => {
                     {formatCurrency(selectedTeamDetails.total_points)}
                   </td>
                 </tr>
+                <tr>
+                  <td className="py-2 font-medium text-gray-600">
+                    Total Points
+                  </td>
+                  <td className="py-2 font-semibold text-gray-900">
+                    {formatCurrency(selectedTeamDetails.total_points)}
+                  </td>
+                </tr>
 
                 <tr>
                   <td className="py-2 font-medium text-gray-600">
@@ -410,6 +430,16 @@ const Teams = () => {
                     {formatCurrency(
                       selectedTeamDetails.total_points -
                         selectedTeamDetails.points_used
+                    )}
+                  </td>
+                </tr>
+                <tr>
+                  <td className="py-2 font-medium text-gray-600">
+                    Recommended Max Points
+                  </td>
+                  <td className="py-2 font-semibold text-green-700">
+                    {formatCurrency(
+                      calculateRecommendedBid(selectedTeamDetails)
                     )}
                   </td>
                 </tr>

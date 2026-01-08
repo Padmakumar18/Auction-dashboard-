@@ -71,7 +71,7 @@ const ResponsiveLayout = ({ children }) => {
         >
           {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
-        <h1 className="text-xl font-bold text-blue-600">Cricket Auction</h1>
+        <h1 className="text-xl font-bold text-blue-600">PK 18</h1>
         <div className="w-10" /> {/* Spacer for centering */}
       </header>
 
@@ -97,7 +97,7 @@ const ResponsiveLayout = ({ children }) => {
       >
         {/* Desktop Header */}
         <div className="hidden lg:block p-6 border-b">
-          <h1 className="text-2xl font-bold text-blue-600">Cricket Auction</h1>
+          <h1 className="text-2xl font-bold text-blue-600">PK 18 🏏</h1>
         </div>
 
         {/* Mobile Close Button */}

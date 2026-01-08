@@ -277,7 +277,7 @@ const Auction = () => {
             backdropFilter: "blur(8px)",
             border: "1px solid rgba(255,255,255,0.15)",
             color: "#000000ff",
-            fontSize: "20px",
+            fontSize: "18px",
             fontWeight: 500,
             textAlign: "center",
             boxShadow:

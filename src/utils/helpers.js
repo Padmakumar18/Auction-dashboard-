@@ -10,7 +10,10 @@ export const formatCurrency = (amount) => {
 // Calculate recommended max bid for a team
 export const calculateRecommendedBid = (team) => {
   if (!team) return 0;
-  const pointsLeft = team.points_left - (team.balance_players_count - 1) * 1000;
+  const pointsLeft =
+    team.balance_players_count === 0
+      ? 0
+      : team.points_left - (team.balance_players_count - 1) * 1000;
   return pointsLeft;
 };
 
