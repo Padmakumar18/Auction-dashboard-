@@ -35,8 +35,9 @@ import Dashboard from "./pages/Dashboard";
 import Teams from "./pages/Teams";
 import Players from "./pages/Players";
 import PlayerRegistration from "./pages/PlayerRegistration";
-import PlayerRegistrationEnhanced from "./pages/PlayerRegistrationEnhanced";
+// import PlayerRegistrationEnhanced from "./pages/PlayerRegistrationEnhanced";
 import Auction from "./pages/Auction";
+import TeamLot from "./pages/TeamLot";
 import Analytics from "./pages/Analytics";
 import Admin from "./pages/Admin";
 import Loader from "./components/Loader";
@@ -180,18 +181,18 @@ function App() {
           }
         />
         <Route
-          path="/player-registration"
+          path="/teams-lot"
           element={
             <RouteWrapper>
-              <PlayerRegistration />
+              <TeamLot />
             </RouteWrapper>
           }
         />
         <Route
-          path="/player-registration-enhanced"
+          path="/player-registration"
           element={
             <RouteWrapper>
-              <PlayerRegistrationEnhanced />
+              <PlayerRegistration />
             </RouteWrapper>
           }
         />

@@ -35,13 +35,16 @@ const Players = () => {
   const [formData, setFormData] = useState({
     name: "",
     role: "",
+    retainedBy: "",
     photoFile: null,
     existingPhoto: null,
   });
 
   const [helper, setHelper] = useState([]);
+  const [selectTeam, setSelectTeam] = useState([]);
   const [filterRole, setFilterRole] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
+  const [isAlreadyRetained, setIsAlreadyRetained] = useState(false);
 
   const [unsoldPlayersCount, setUnsoldPlayersCount] = useState(0);
   const [soldPlayersCount, setSoldPlayersCount] = useState(0);
@@ -115,6 +118,17 @@ const Players = () => {
       setTeams(getAllTeams);
       setPlayers(getAllPlayers);
 
+      if (teams && selectTeam.length === 0) {
+        const teamOptions = teams.map((e) => ({
+          value: e.id,
+          label: e.team_name,
+        }));
+
+        setSelectTeam(teamOptions);
+      }
+
+      console.log(selectTeam);
+
       console.log("players");
       console.log(players);
 
@@ -142,8 +156,13 @@ const Players = () => {
         name: player.name,
         role: matchedRole,
         photoFile: null,
+        retainedBy: player.retained_team,
         existingPhoto: player.player_photo,
       });
+
+      if (player.retained_team !== null) {
+        setIsAlreadyRetained(true);
+      }
     } else {
       setEditingPlayer(null);
       setFormData({
@@ -169,12 +188,14 @@ const Players = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    const validationErrors = validatePlayer({
-      name: formData.name,
-      role: formData.role,
-      photo_file: formData.photoFile,
-    });
+    const validationErrors = validatePlayer(
+      {
+        name: formData.name,
+        role: formData.role,
+        photo_file: formData.photoFile,
+      },
+      editingPlayer
+    );
 
     if (validationErrors.length > 0) {
       validationErrors.forEach((error) => toast.error(error));
@@ -216,8 +237,12 @@ const Players = () => {
         name: formData.name,
         role: normalizedRole,
         base_price: parseInt(helper[0].base_price),
+        retained_team: formData.retainedBy,
         player_photo: photoUrl,
       };
+
+      console.log("playerData");
+      console.log(playerData);
 
       if (editingPlayer) {
         const updated = await playersAPI.update(editingPlayer.id, playerData);
@@ -421,7 +446,7 @@ const Players = () => {
             </button>
           </div> */}
 
-          {isAuthenticated && (
+          {/* {isAuthenticated && (
             <Button
               onClick={() => handleOpenModal()}
               className="flex-1 sm:flex-initial"
@@ -430,7 +455,7 @@ const Players = () => {
               <span className="hidden sm:inline">Add Player</span>
               <span className="sm:hidden">Add</span>
             </Button>
-          )}
+          )} */}
         </div>
       </div>
 
@@ -533,6 +558,16 @@ const Players = () => {
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             placeholder="Enter player name"
             required
+          />
+
+          <Select
+            label="Retained By"
+            value={formData.retainedBy}
+            onChange={(e) =>
+              setFormData({ ...formData, retainedBy: e.target.value })
+            }
+            options={selectTeam}
+            placeholder="Select team"
           />
 
           <Select

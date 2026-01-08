@@ -1,13 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Card from "../components/Card";
 import Input from "../components/Input";
 import Select from "../components/Select";
 import FileUploadWithPreview from "../components/FileUploadWithPreview";
 import Button from "../components/Button";
-import { playersAPI } from "../services/api";
+import { playersAPI, helperAPI } from "../services/api";
 import { supabase } from "../config/supabase";
 import { showSuccess, showError } from "../utils/toast";
+import toast from "react-hot-toast";
 
 const PlayerRegistrationEnhanced = () => {
   const navigate = useNavigate();
@@ -15,23 +16,28 @@ const PlayerRegistrationEnhanced = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 4;
 
+  const [helper, setHelper] = useState([]);
+
   const [formData, setFormData] = useState({
     name: "",
     location: "",
     jersey_size: "",
     jersey_number: "",
+    phone_number: "",
     role: "",
   });
 
   const [files, setFiles] = useState({
     playerPhoto: null,
     paymentProof: null,
+    playerIdProof: null,
   });
 
   const [errors, setErrors] = useState({});
   const [previews, setPreviews] = useState({
     playerPhoto: null,
     paymentProof: null,
+    playerIdProof: null,
   });
 
   const locations = [
@@ -41,7 +47,7 @@ const PlayerRegistrationEnhanced = () => {
   ];
 
   const roles = [
-    { value: "all-rounder", label: "All-rounder" },
+    { value: "allrounder", label: "All-rounder" },
     { value: "batsman", label: "Batsman" },
     { value: "bowler", label: "Bowler" },
   ];
@@ -54,6 +60,29 @@ const PlayerRegistrationEnhanced = () => {
     { value: "XL", label: "XL" },
     { value: "XXL", label: "XXL" },
   ];
+
+  useEffect(() => {
+    loadHelper();
+  }, []);
+  const loadHelper = async () => {
+    try {
+      setLoading(true);
+      const data = await helperAPI.getAll();
+      setHelper(data);
+
+      console.log("helper");
+      console.log(helper);
+
+      // console.log("helper");
+      // console.log(helper);
+    } catch (error) {
+      console.error("Helper load failed:", error);
+
+      toast.error("Failed to load helper");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -102,6 +131,8 @@ const PlayerRegistrationEnhanced = () => {
     if (step === 1) {
       if (!formData.name.trim()) newErrors.name = "Player name is required";
       if (!formData.location) newErrors.location = "Location is required";
+      if (!formData.phone_number)
+        newErrors.phone_number = "Enter your correct phone number";
     }
 
     if (step === 2) {
@@ -127,6 +158,8 @@ const PlayerRegistrationEnhanced = () => {
         newErrors.playerPhoto = "Player photo is required";
       if (!files.paymentProof)
         newErrors.paymentProof = "Payment proof is required";
+      if (!files.playerIdProof)
+        newErrors.playerIdProof = "Payment ID proof is required";
     }
 
     setErrors(newErrors);
@@ -144,24 +177,33 @@ const PlayerRegistrationEnhanced = () => {
   };
 
   const uploadFile = async (file, bucket, folder = "") => {
+    // Normalize folder path (ensure trailing slash if provided)
+    const normalizedFolder = folder ? folder : "";
+
     const fileExt = file.name.split(".").pop();
-    const fileName = `${folder}${Date.now()}_${Math.random()
-      .toString(36)
-      .substring(7)}.${fileExt}`;
+    const filePath = `${normalizedFolder}${Date.now()}.${fileExt}`;
 
     const { data, error } = await supabase.storage
       .from(bucket)
-      .upload(fileName, file);
+      .upload(filePath, file);
 
-    if (error) throw error;
-    return data.path;
+    if (error) {
+      throw new Error("Photo upload failed. Please retry.");
+    }
+
+    const { data: publicUrlData } = supabase.storage
+      .from(bucket)
+      .getPublicUrl(filePath);
+
+    return publicUrlData.publicUrl;
   };
 
   const handleSubmit = async (e) => {
+    const toastId = toast.loading("Submitting...");
     e.preventDefault();
 
     if (!validateStep(4)) {
-      showError("Please complete all required fields");
+      showError("Please fill in all required fields");
       return;
     }
 
@@ -170,51 +212,80 @@ const PlayerRegistrationEnhanced = () => {
     try {
       const playerPhotoPath = await uploadFile(
         files.playerPhoto,
-        "players-photos",
-        "registrations/"
+        "player-photos",
+        "player_photos/"
       );
 
+      // Upload payment proof
       const paymentProofPath = await uploadFile(
         files.paymentProof,
-        "payment-proofs",
-        "registrations/"
+        "player-photos",
+        "payments/"
+      );
+
+      const IdProofPath = await uploadFile(
+        files.playerIdProof,
+        "player-photos",
+        "player_id_proof/"
       );
 
       const playerData = {
         name: formData.name.trim(),
-        location: formData.location,
-        jersey_size: formData.jersey_size,
-        jersey_number: parseInt(formData.jersey_number),
+        phone_number: formData.phone_number,
+        player_location: formData.location,
+        pleyer_jersey_size: formData.jersey_size.toLocaleUpperCase(),
+        pleyer_jersey_number: formData.jersey_number,
         role: formData.role,
         player_photo: playerPhotoPath,
-        payment_proof: paymentProofPath,
-        base_price: 100,
+        player_id_proof_photo: IdProofPath,
+        player_payment_proof_photo: paymentProofPath,
+        base_price: helper[0].base_price,
       };
 
       await playersAPI.create(playerData);
 
-      showSuccess("Registration successful!");
+      toast.success("Registration successfull!");
+      toast.dismiss(toastId);
+      clearForm();
 
-      setFormData({
-        name: "",
-        location: "",
-        jersey_size: "",
-        jersey_number: "",
-        role: "",
-      });
-      setFiles({ playerPhoto: null, paymentProof: null });
-      setPreviews({ playerPhoto: null, paymentProof: null });
-      setCurrentStep(1);
-
-      setTimeout(() => {
-        navigate("/players");
-      }, 1500);
+      // Navigate to players page after a short delay
     } catch (error) {
+      toast.dismiss(toastId);
       console.error("Registration error:", error);
-      showError(error.message || "Registration failed. Please try again.");
+      // showError(error.message || "Registration failed. Please try again.");
+      if (
+        error?.code === "23505" &&
+        error?.message?.includes("players_phone_number_key")
+      ) {
+        toast.error(
+          "Phone number already exists. Please use a different number."
+        );
+      } else {
+        toast.error("Registration failed. Please try again.");
+      }
     } finally {
+      toast.dismiss(toastId);
       setLoading(false);
     }
+  };
+
+  const clearForm = () => {
+    setFormData({
+      name: "",
+      location: "",
+      jersey_size: "",
+      jersey_number: "",
+      phone_number: "",
+      role: "",
+    });
+    setFiles({ playerPhoto: null, paymentProof: null, playerIdProof: null });
+    setPreviews({
+      playerPhoto: null,
+      paymentProof: null,
+      playerIdProof: null,
+    });
+
+    setErrors("");
   };
 
   const renderStepContent = () => {
@@ -233,6 +304,15 @@ const PlayerRegistrationEnhanced = () => {
               placeholder="Enter your full name"
               required
               error={errors.name}
+            />
+            <Input
+              label="Phone Number"
+              name="phone_number"
+              value={formData.phone_number}
+              onChange={handleInputChange}
+              placeholder="+91 XXXXXXXXXX"
+              required
+              error={errors.phone_number}
             />
             <Select
               label="Location"
@@ -316,6 +396,13 @@ const PlayerRegistrationEnhanced = () => {
               preview={previews.paymentProof}
               required
               error={errors.paymentProof}
+            />
+            <FileUploadWithPreview
+              label="ID Proof"
+              onChange={(e) => handleFileChange(e, "playerIdProof")}
+              preview={previews.playerIdProof}
+              required
+              error={errors.playerIdProof}
             />
           </div>
         );

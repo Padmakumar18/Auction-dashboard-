@@ -40,10 +40,15 @@ const ResponsiveLayout = ({ children }) => {
       label: "Player Registration",
     },
     {
-      path: "/player-registration-enhanced",
+      path: "/teams-lot",
       icon: FileKeyIcon,
-      label: "Player Registration",
+      label: "Team Lot",
     },
+    // {
+    //   path: "/player-registration-enhanced",
+    //   icon: FileKeyIcon,
+    //   label: "Player Registration",
+    // },
   ];
 
   // Limited navigation for non-authenticated users (only Teams and Players)

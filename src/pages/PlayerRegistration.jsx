@@ -15,6 +15,7 @@ const PlayerRegistration = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [helper, setHelper] = useState([]);
+
   const [formData, setFormData] = useState({
     name: "",
     location: "",
@@ -226,7 +227,6 @@ const PlayerRegistration = () => {
   };
 
   const handleSubmit = async (e) => {
-    const toastId = toast.loading("Submitting...");
     e.preventDefault();
 
     if (!validateForm()) {
@@ -235,7 +235,7 @@ const PlayerRegistration = () => {
     }
 
     setLoading(true);
-
+    const toastId = toast.loading("Submitting...");
     try {
       const playerPhotoPath = await uploadFile(
         files.playerPhoto,
@@ -272,12 +272,10 @@ const PlayerRegistration = () => {
       await playersAPI.create(playerData);
 
       toast.success("Registration successfull!");
-      toast.dismiss(toastId);
       // clearForm();
 
       // Navigate to players page after a short delay
     } catch (error) {
-      toast.dismiss(toastId);
       console.error("Registration error:", error);
       // showError(error.message || "Registration failed. Please try again.");
       if (
