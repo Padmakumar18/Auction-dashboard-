@@ -14,15 +14,13 @@ import useStore from "../store/useStore";
 import { playersAPI, teamsAPI, helperAPI } from "../services/api";
 import { formatCurrency, validatePlayer, parseCSV } from "../utils/helpers";
 
-// Player Grid Component
-
 const Players = () => {
   const {
     teams,
+    updateTeam,
     setTeams,
     players,
     setPlayers,
-    addPlayer,
     updatePlayer,
     isAuthenticated,
   } = useStore();
@@ -41,10 +39,13 @@ const Players = () => {
   });
 
   const [helper, setHelper] = useState([]);
-  const [selectTeam, setSelectTeam] = useState([]);
+  // const [selectTeam, setSelectTeam] = useState([]); -> for Options values
   const [filterRole, setFilterRole] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
+  const [selectedTeam, setSlectedTeam] = useState(null);
+
   const [isAlreadyRetained, setIsAlreadyRetained] = useState(false);
+  const [alreadyRetainedPlayer, SetAlreadyRetainedPlayer] = useState(false);
 
   const [unsoldPlayersCount, setUnsoldPlayersCount] = useState(0);
   const [soldPlayersCount, setSoldPlayersCount] = useState(0);
@@ -56,6 +57,10 @@ const Players = () => {
     loadData();
     loadHelper();
   }, []);
+
+  useEffect(() => {
+    console.log("selectedTeam updated:", selectedTeam);
+  }, [selectedTeam]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -118,16 +123,14 @@ const Players = () => {
       setTeams(getAllTeams);
       setPlayers(getAllPlayers);
 
-      if (teams && selectTeam.length === 0) {
-        const teamOptions = teams.map((e) => ({
-          value: e.id,
-          label: e.team_name,
-        }));
+      // if (teams && selectTeam.length === 0) {
+      //   const teamOptions = teams.map((e) => ({
+      //     value: e.id,
+      //     label: e.team_name,
+      //   }));
 
-        setSelectTeam(teamOptions);
-      }
-
-      console.log(selectTeam);
+      //   setSelectTeam(teamOptions);
+      // }
 
       console.log("players");
       console.log(players);
@@ -146,8 +149,54 @@ const Players = () => {
     }
   };
 
+  const retainedTeam = (team) => {
+    console.log(isAlreadyRetained);
+    console.log("team");
+    console.log(team);
+
+    if (!isAlreadyRetained && team.players_count === team.max_players) {
+      toast.error("Maximum players reached");
+      setFormData({ retainedBy: "" });
+    }
+    setSlectedTeam(team);
+    console.log("selectedTeam");
+    console.log(selectedTeam);
+    // setFormData({ retainedBy: "" });
+  };
+
+  // If player didnt retained :
+  // Update teams table (
+  // points left , points used , balance players , players count ,
+  // )
+
+  // Update player table (
+  // status , sold_to , sold_price , sold_team , retained_team
+  // )
+
+  // If already retained and change the player retained :
+  // Update teams table (
+  // No changes in teams table
+  // )
+  // update players table (
+  // status , sold_to , sold_price , sold_team , retained_team -> for both players
+  // )
+
+  // If users wants to remove retained player
+  // Update teams table (
+  // total points , points left , points used , balance players , players count ,
+  // )
+
+  // Update player table (
+  // status , sold_to , sold_price , sold_team , retained_team -> for selected player
+  // )
+
   const handleOpenModal = (player = null) => {
     if (player) {
+      if (player.retained_team != null) {
+        /// This is for update player sold price
+        SetAlreadyRetainedPlayer(player.id);
+        setIsAlreadyRetained(true);
+      }
       setEditingPlayer(player);
       const matchedRole =
         roles.find((r) => r.toLowerCase() === player.role.toLowerCase()) || "";
@@ -159,15 +208,12 @@ const Players = () => {
         retainedBy: player.retained_team,
         existingPhoto: player.player_photo,
       });
-
-      if (player.retained_team !== null) {
-        setIsAlreadyRetained(true);
-      }
     } else {
       setEditingPlayer(null);
       setFormData({
         name: "",
         role: "",
+        retainedBy: "",
         photoFile: null,
         existingPhoto: null,
       });
@@ -188,14 +234,11 @@ const Players = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const validationErrors = validatePlayer(
-      {
-        name: formData.name,
-        role: formData.role,
-        photo_file: formData.photoFile,
-      },
-      editingPlayer
-    );
+    const validationErrors = validatePlayer({
+      name: formData.name,
+      role: formData.role,
+      photo_file: formData.photoFile,
+    });
 
     if (validationErrors.length > 0) {
       validationErrors.forEach((error) => toast.error(error));
@@ -233,26 +276,45 @@ const Players = () => {
         photoUrl = publicUrlData.publicUrl;
       }
 
+      const retainingPlayer = !isAlreadyRetained
+        ? {
+            sold_to: selectedTeam.id,
+            sold_team: selectedTeam.team_name,
+            sold_price: helper[0].base_price,
+            status: "sold",
+            retained_team: selectedTeam.id,
+          }
+        : {};
+
       const playerData = {
         name: formData.name,
         role: normalizedRole,
         base_price: parseInt(helper[0].base_price),
         retained_team: formData.retainedBy,
         player_photo: photoUrl,
+        ...retainingPlayer,
       };
+
+      if (!isAlreadyRetained) {
+        const teamData = {
+          points_left: selectedTeam.total_points - helper[0].base_price,
+          points_used: selectedTeam.points_used + helper[0].base_price,
+          balance_players_count:
+            parseInt(selectedTeam.balance_players_count) - 1,
+          players_count: parseInt(selectedTeam.players_count) + 1,
+        };
+
+        const updated = teamsAPI.update(selectedTeam.id, teamData);
+        updateTeam(selectedTeam.id, updated);
+      }
 
       console.log("playerData");
       console.log(playerData);
 
-      if (editingPlayer) {
-        const updated = await playersAPI.update(editingPlayer.id, playerData);
-        updatePlayer(editingPlayer.id, updated);
-        toast.success("Player updated successfully!");
-      } else {
-        const created = await playersAPI.create(playerData);
-        addPlayer(created);
-        toast.success("Player created successfully!");
-      }
+      const updated = await playersAPI.update(editingPlayer.id, playerData);
+      updatePlayer(editingPlayer.id, updated);
+
+      toast.success("Player updated successfully!");
 
       handleCloseModal();
     } catch (error) {
@@ -563,10 +625,15 @@ const Players = () => {
           <Select
             label="Retained By"
             value={formData.retainedBy}
-            onChange={(e) =>
-              setFormData({ ...formData, retainedBy: e.target.value })
-            }
-            options={selectTeam}
+            onChange={(e) => {
+              const selectedTeamId = e.target.value;
+              const selectedTeam = teams.find(
+                (team) => team.id === selectedTeamId
+              );
+              setFormData({ ...formData, retainedBy: selectedTeamId });
+              retainedTeam(selectedTeam);
+            }}
+            options={teams.map((r) => ({ value: r.id, label: r.team_name }))}
             placeholder="Select team"
           />
 

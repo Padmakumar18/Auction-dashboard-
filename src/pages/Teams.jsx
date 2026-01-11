@@ -545,7 +545,7 @@ const Teams = () => {
                 key={player.id}
                 className="border rounded-lg p-3 shadow-sm bg-white"
               >
-                {selectedTeamName?.retain_player === player.id && (
+                {selectedTeamName?.id === player.retained_team && (
                   <p className="font-bold text-red-600">Retain Player</p>
                 )}
 

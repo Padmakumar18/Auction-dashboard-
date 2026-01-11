@@ -35,6 +35,7 @@ const Admin = () => {
           sold_price: null,
           sold_to: null,
           sold_team: null,
+          retained_team: null,
         })
       );
 
@@ -45,6 +46,7 @@ const Admin = () => {
           points_left: team.total_points,
           balance_players_count: team.max_players,
           players_count: 0,
+          group_name: null,
         })
       );
 

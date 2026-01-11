@@ -17,7 +17,6 @@ import {
   canTeamAffordBid,
   calculateRecommendedBid,
   shuffleArray,
-  extractDriveFileId,
 } from "../utils/helpers";
 
 const Auction = () => {

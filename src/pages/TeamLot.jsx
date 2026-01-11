@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Shuffle, X } from "lucide-react";
 
 export default function TeamLot() {
-  const totalTeams = 12; // Default 12 teams
+  const totalTeams = 8; // Default 12 teams
   const [step, setStep] = useState(1);
   const [numGroups, setNumGroups] = useState("");
   const [teamsPerGroup, setTeamsPerGroup] = useState("");

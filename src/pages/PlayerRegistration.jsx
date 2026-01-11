@@ -272,7 +272,7 @@ const PlayerRegistration = () => {
       await playersAPI.create(playerData);
 
       toast.success("Registration successfull!");
-      // clearForm();
+      clearForm();
 
       // Navigate to players page after a short delay
     } catch (error) {

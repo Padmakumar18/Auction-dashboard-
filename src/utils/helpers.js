@@ -129,8 +129,7 @@ export const formatDate = (date) => {
 };
 
 // Validate player data
-export const validatePlayer = (player, editingPlayer = null) => {
-  console.log(editingPlayer);
+export const validatePlayer = (player) => {
   const errors = [];
   if (!player.name || player.name.trim() === "") {
     errors.push("Player name is required");
@@ -141,11 +140,11 @@ export const validatePlayer = (player, editingPlayer = null) => {
   // if (!player.player_photo || player.player_photo.trim() === "") {
   //   errors.push("Player photo link is required");
   // }
-  if (editingPlayer == null) {
-    if (player.photo_file == null) {
-      errors.push("Player photo file is required");
-    }
-  }
+  // if (editingPlayer == null) {
+  //   if (player.photo_file == null) {
+  //     errors.push("Player photo file is required");
+  //   }
+  // }
 
   return errors;
 };
