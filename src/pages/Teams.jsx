@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { Plus, Edit2, Trash2, Search } from "lucide-react";
+import { Plus, Trash2, Search } from "lucide-react";
 import Card from "../components/Card";
 import Button from "../components/Button";
 import Modal from "../components/Modal";
@@ -8,10 +8,15 @@ import Input from "../components/Input";
 import Loader from "../components/Loader";
 import useStore from "../store/useStore";
 import { teamsAPI, playersAPI, helperAPI } from "../services/api";
-import { formatCurrency, validateTeam } from "../utils/helpers";
+import {
+  formatCurrency,
+  validateTeam,
+  calculateRecommendedBid,
+} from "../utils/helpers";
 
 const Teams = () => {
-  const { players, teams, setTeams, addTeam, updateTeam } = useStore();
+  const { players, teams, setTeams, addTeam, updateTeam, isAuthenticated } =
+    useStore();
   const [helper, setHelper] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -34,13 +39,27 @@ const Teams = () => {
     loadHelper();
   }, []);
 
+  // Auto-refresh every 15 seconds when not logged in
+  useEffect(() => {
+    if (!isAuthenticated) {
+      const interval = setInterval(() => {
+        loadTeams();
+      }, 15000); // 15 seconds
+
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated]);
+
   const filteredTeams = teams.filter((team) =>
     team.team_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const loadTeams = async () => {
     try {
-      setLoading(true);
+      // Only show loading spinner if authenticated
+      if (isAuthenticated) {
+        setLoading(true);
+      }
       const data = await teamsAPI.getAll();
       setTeams(data);
 
@@ -48,14 +67,20 @@ const Teams = () => {
       // console.log(data);
     } catch (error) {
       console.error("Error loading teams:", error);
-      toast.error("Failed to load teams");
+      if (isAuthenticated) {
+        toast.error("Failed to load teams");
+      }
     } finally {
-      setLoading(false);
+      if (isAuthenticated) {
+        setLoading(false);
+      }
     }
   };
 
   const loadHelper = async () => {
-    setLoading(true);
+    if (isAuthenticated) {
+      setLoading(true);
+    }
     try {
       const data = await helperAPI.getAll();
       setHelper(data);
@@ -64,9 +89,13 @@ const Teams = () => {
       // console.log(helper);
     } catch (error) {
       console.error("Helper load failed:", error);
-      toast.error("Failed to load helper");
+      if (isAuthenticated) {
+        toast.error("Failed to load helper");
+      }
     } finally {
-      setLoading(false);
+      if (isAuthenticated) {
+        setLoading(false);
+      }
     }
   };
 
@@ -219,27 +248,34 @@ const Teams = () => {
     setSelectedTeamPlayers([]);
   };
 
-  if (loading) return <Loader fullScreen />;
+  // Only show loader when authenticated
+  if (loading && isAuthenticated) return <Loader fullScreen />;
 
   return (
     <div>
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Teams Management</h1>
-        <Button onClick={() => handleOpenModal()}>
-          <Plus size={20} className="inline mr-2" />
-          Add Team
-        </Button>
+        {isAuthenticated && (
+          <Button onClick={() => handleOpenModal()}>
+            <Plus size={20} className="inline mr-2" />
+            Add Team
+          </Button>
+        )}
       </div>
-      <div>
+
+      {/* Search Input */}
+      <div className="mb-6">
         <Input
           placeholder="Search team by name"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           icon={<Search size={16} />}
+          className="w-full"
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Teams Grid - Responsive */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
         {filteredTeams &&
           filteredTeams.length > 0 &&
           filteredTeams.map((team) => {
@@ -261,19 +297,22 @@ const Teams = () => {
                     >
                       Team Info
                     </button>
-                    <button
-                      onClick={() => handleOpenModal(team)}
-                      className="text-white bg-blue-500 px-4 rounded text-md"
-                    >
-                      {/* <Edit2 size={18} /> */}
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(team.id)}
-                      className="text-red-600 hover:text-red-800"
-                    >
-                      <Trash2 size={20} />
-                    </button>
+                    {isAuthenticated && (
+                      <>
+                        <button
+                          onClick={() => handleOpenModal(team)}
+                          className="text-white bg-blue-500 px-4 rounded text-md"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(team.id)}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          <Trash2 size={20} />
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
 
@@ -310,6 +349,14 @@ const Teams = () => {
                     <span className="text-gray-600">Points Left:</span>
                     <span className="font-semibold text-green-600">
                       {formatCurrency(pointsLeft)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">
+                      Recommended Max Points :
+                    </span>
+                    <span className="font-semibold text-red-600">
+                      {formatCurrency(calculateRecommendedBid(team))}
                     </span>
                   </div>
 
@@ -357,6 +404,14 @@ const Teams = () => {
                     {formatCurrency(selectedTeamDetails.total_points)}
                   </td>
                 </tr>
+                <tr>
+                  <td className="py-2 font-medium text-gray-600">
+                    Total Points
+                  </td>
+                  <td className="py-2 font-semibold text-gray-900">
+                    {formatCurrency(selectedTeamDetails.total_points)}
+                  </td>
+                </tr>
 
                 <tr>
                   <td className="py-2 font-medium text-gray-600">
@@ -375,6 +430,16 @@ const Teams = () => {
                     {formatCurrency(
                       selectedTeamDetails.total_points -
                         selectedTeamDetails.points_used
+                    )}
+                  </td>
+                </tr>
+                <tr>
+                  <td className="py-2 font-medium text-gray-600">
+                    Recommended Max Points
+                  </td>
+                  <td className="py-2 font-semibold text-green-700">
+                    {formatCurrency(
+                      calculateRecommendedBid(selectedTeamDetails)
                     )}
                   </td>
                 </tr>
@@ -480,7 +545,7 @@ const Teams = () => {
                 key={player.id}
                 className="border rounded-lg p-3 shadow-sm bg-white"
               >
-                {selectedTeamName?.retain_player === player.id && (
+                {selectedTeamName?.id === player.retained_team && (
                   <p className="font-bold text-red-600">Retain Player</p>
                 )}
 

@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { Plus, Upload, Edit2, Trash2, Filter } from "lucide-react";
+import { Plus, Upload, Edit2, Trash2, Filter, Grid, List } from "lucide-react";
 import Button from "../components/Button";
 import Modal from "../components/Modal";
 import Input from "../components/Input";
+import PlayerGrid from "../components/PlayerGrid";
 import Select from "../components/Select";
 import Table from "../components/Table";
 import Loader from "../components/Loader";
@@ -14,24 +15,37 @@ import { playersAPI, teamsAPI, helperAPI } from "../services/api";
 import { formatCurrency, validatePlayer, parseCSV } from "../utils/helpers";
 
 const Players = () => {
-  const { teams, setTeams, players, setPlayers, addPlayer, updatePlayer } =
-    useStore();
+  const {
+    teams,
+    updateTeam,
+    setTeams,
+    players,
+    setPlayers,
+    updatePlayer,
+    isAuthenticated,
+  } = useStore();
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState(null);
+  const [viewMode, setViewMode] = useState("grid"); // "table" or "grid"
   const [formData, setFormData] = useState({
     name: "",
     role: "",
-    photoFile: null, // holds the raw File object
-    existingPhoto: null, // holds Supabase public URL after upload
-    // soldTo: "",
+    retainedBy: "",
+    photoFile: null,
+    existingPhoto: null,
   });
 
   const [helper, setHelper] = useState([]);
+  // const [selectTeam, setSelectTeam] = useState([]); -> for Options values
   const [filterRole, setFilterRole] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
+  const [selectedTeam, setSlectedTeam] = useState(null);
+
+  const [isAlreadyRetained, setIsAlreadyRetained] = useState(false);
+  const [alreadyRetainedPlayer, SetAlreadyRetainedPlayer] = useState(false);
 
   const [unsoldPlayersCount, setUnsoldPlayersCount] = useState(0);
   const [soldPlayersCount, setSoldPlayersCount] = useState(0);
@@ -43,6 +57,20 @@ const Players = () => {
     loadData();
     loadHelper();
   }, []);
+
+  useEffect(() => {
+    console.log("selectedTeam updated:", selectedTeam);
+  }, [selectedTeam]);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      const interval = setInterval(() => {
+        loadData();
+      }, 15000);
+
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated]);
 
   useEffect(() => {
     const unsoldPlayersCount = players
@@ -67,28 +95,42 @@ const Players = () => {
   }, [players]);
 
   const loadHelper = async () => {
-    setLoading(true);
+    if (isAuthenticated) {
+      setLoading(true);
+    }
     try {
       const data = await helperAPI.getAll();
       setHelper(data);
-
-      // console.log("helper");
-      // console.log(helper);
     } catch (error) {
       console.error("Helper load failed:", error);
-      toast.error("Failed to load helper");
+      if (isAuthenticated) {
+        toast.error("Failed to load helper");
+      }
     } finally {
-      setLoading(false);
+      if (isAuthenticated) {
+        setLoading(false);
+      }
     }
   };
 
   const loadData = async () => {
     try {
-      setLoading(true);
+      if (isAuthenticated) {
+        setLoading(true);
+      }
       const getAllPlayers = await playersAPI.getAll();
       const getAllTeams = await teamsAPI.getAll();
       setTeams(getAllTeams);
       setPlayers(getAllPlayers);
+
+      // if (teams && selectTeam.length === 0) {
+      //   const teamOptions = teams.map((e) => ({
+      //     value: e.id,
+      //     label: e.team_name,
+      //   }));
+
+      //   setSelectTeam(teamOptions);
+      // }
 
       console.log("players");
       console.log(players);
@@ -97,16 +139,64 @@ const Players = () => {
       console.log(teams);
     } catch (error) {
       console.error("Error loading players:", error);
-      toast.error("Failed to load players");
+      if (isAuthenticated) {
+        toast.error("Failed to load players");
+      }
     } finally {
-      setLoading(false);
+      if (isAuthenticated) {
+        setLoading(false);
+      }
     }
   };
 
+  const retainedTeam = (team) => {
+    console.log(isAlreadyRetained);
+    console.log("team");
+    console.log(team);
+
+    if (!isAlreadyRetained && team.players_count === team.max_players) {
+      toast.error("Maximum players reached");
+      setFormData({ retainedBy: "" });
+    }
+    setSlectedTeam(team);
+    console.log("selectedTeam");
+    console.log(selectedTeam);
+    // setFormData({ retainedBy: "" });
+  };
+
+  // If player didnt retained :
+  // Update teams table (
+  // points left , points used , balance players , players count ,
+  // )
+
+  // Update player table (
+  // status , sold_to , sold_price , sold_team , retained_team
+  // )
+
+  // If already retained and change the player retained :
+  // Update teams table (
+  // No changes in teams table
+  // )
+  // update players table (
+  // status , sold_to , sold_price , sold_team , retained_team -> for both players
+  // )
+
+  // If users wants to remove retained player
+  // Update teams table (
+  // total points , points left , points used , balance players , players count ,
+  // )
+
+  // Update player table (
+  // status , sold_to , sold_price , sold_team , retained_team -> for selected player
+  // )
+
   const handleOpenModal = (player = null) => {
     if (player) {
-      console.log("player");
-      console.log(player);
+      if (player.retained_team != null) {
+        /// This is for update player sold price
+        SetAlreadyRetainedPlayer(player.id);
+        setIsAlreadyRetained(true);
+      }
       setEditingPlayer(player);
       const matchedRole =
         roles.find((r) => r.toLowerCase() === player.role.toLowerCase()) || "";
@@ -115,17 +205,17 @@ const Players = () => {
         name: player.name,
         role: matchedRole,
         photoFile: null,
+        retainedBy: player.retained_team,
         existingPhoto: player.player_photo,
-        // soldTo: player.sold_team,
       });
     } else {
       setEditingPlayer(null);
       setFormData({
         name: "",
         role: "",
+        retainedBy: "",
         photoFile: null,
         existingPhoto: null,
-        // soldTo: "",
       });
     }
     setIsModalOpen(true);
@@ -139,17 +229,15 @@ const Players = () => {
       role: "",
       photoFile: null,
       existingPhoto: null,
-      // soldTo: "",
     });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     const validationErrors = validatePlayer({
       name: formData.name,
       role: formData.role,
-      photo_file: formData.photoFile, // required for upload
+      photo_file: formData.photoFile,
     });
 
     if (validationErrors.length > 0) {
@@ -167,31 +255,15 @@ const Players = () => {
     const normalizedRole = ROLE_NORMALIZATION_MAP[formData.role];
 
     try {
-      // -------------------------------------------------
-      // 1. Upload photo to Supabase bucket
-      // -------------------------------------------------
-      // let photoUrl = null;
-
-      let photoUrl = formData.existingPhoto; // default = existing
+      let photoUrl = formData.existingPhoto;
 
       if (formData.photoFile) {
         const file = formData.photoFile;
-        // console.log("file");
-        // console.log(file);
-
-        const filePath = `players/${Date.now()}_${file.name}`;
-        // console.log("filePath");
-        // console.log(filePath);
+        const filePath = `player_photo/${Date.now()}_${file.name}`;
 
         const { error: uploadError } = await supabase.storage
           .from("player-photos")
           .upload(filePath, file);
-
-        // console.log("error");
-        // console.log(error);
-
-        // console.log("uploadError");
-        // console.log(uploadError);
 
         if (uploadError) {
           throw new Error("Photo upload failed. Please retry.");
@@ -204,22 +276,45 @@ const Players = () => {
         photoUrl = publicUrlData.publicUrl;
       }
 
+      const retainingPlayer = !isAlreadyRetained
+        ? {
+            sold_to: selectedTeam.id,
+            sold_team: selectedTeam.team_name,
+            sold_price: helper[0].base_price,
+            status: "sold",
+            retained_team: selectedTeam.id,
+          }
+        : {};
+
       const playerData = {
         name: formData.name,
         role: normalizedRole,
         base_price: parseInt(helper[0].base_price),
-        player_photo: photoUrl, // <-- dynamic Supabase URL
+        retained_team: formData.retainedBy,
+        player_photo: photoUrl,
+        ...retainingPlayer,
       };
 
-      if (editingPlayer) {
-        const updated = await playersAPI.update(editingPlayer.id, playerData);
-        updatePlayer(editingPlayer.id, updated);
-        toast.success("Player updated successfully!");
-      } else {
-        const created = await playersAPI.create(playerData);
-        addPlayer(created);
-        toast.success("Player created successfully!");
+      if (!isAlreadyRetained) {
+        const teamData = {
+          points_left: selectedTeam.total_points - helper[0].base_price,
+          points_used: selectedTeam.points_used + helper[0].base_price,
+          balance_players_count:
+            parseInt(selectedTeam.balance_players_count) - 1,
+          players_count: parseInt(selectedTeam.players_count) + 1,
+        };
+
+        const updated = teamsAPI.update(selectedTeam.id, teamData);
+        updateTeam(selectedTeam.id, updated);
       }
+
+      console.log("playerData");
+      console.log(playerData);
+
+      const updated = await playersAPI.update(editingPlayer.id, playerData);
+      updatePlayer(editingPlayer.id, updated);
+
+      toast.success("Player updated successfully!");
 
       handleCloseModal();
     } catch (error) {
@@ -268,18 +363,6 @@ const Players = () => {
     );
   };
 
-  // const handleDelete = async (id) => {
-  //   if (!window.confirm("Are you sure you want to delete this player?")) return;
-
-  //   try {
-  //     await playersAPI.delete(id);
-  //     setPlayers(players.filter((p) => p.id !== id));
-  //     toast.success("Player deleted successfully!");
-  //   } catch (error) {
-  //     toast.error("Failed to delete player: " + error.message);
-  //   }
-  // };
-
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -316,11 +399,26 @@ const Players = () => {
     return true;
   });
 
-  // console.log(
-  //   teams.find((t) => t.id === "2a810c8d-6721-4653-8344-90b1f29878e0").team_name
-  // );
-
   const columns = [
+    {
+      header: "Player Photo",
+      accessor: "player_photo",
+      isPhoto: true,
+      render: (row) => (
+        <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 flex items-center justify-center">
+          <img
+            src={row.player_photo}
+            alt={row.name}
+            className="max-w-full max-h-full object-contain rounded-lg bg-white"
+            loading="lazy"
+            onError={(e) => {
+              e.currentTarget.onerror = null;
+              e.currentTarget.src = "/images/default-avatar.png";
+            }}
+          />
+        </div>
+      ),
+    },
     { header: "Name", accessor: "name" },
     { header: "Role", accessor: "role" },
     {
@@ -352,75 +450,121 @@ const Players = () => {
       render: (row) =>
         teams.find((t) => t.id === row.sold_to)?.team_name || "-",
     },
-    {
-      header: "Actions",
-      render: (row) => (
-        <div className="flex gap-2">
-          <button
-            onClick={() => handleOpenModal(row)}
-            className="text-blue-600 hover:text-blue-800"
-          >
-            <Edit2 size={16} />
-          </button>
-          <button
-            onClick={() => handleDelete(row)}
-            className="text-red-600 hover:text-red-800"
-          >
-            <Trash2 size={16} />
-          </button>
-        </div>
-      ),
-    },
+    ...(isAuthenticated
+      ? [
+          {
+            header: "Actions",
+            render: (row) => (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleOpenModal(row)}
+                  className="text-blue-600 hover:text-blue-800"
+                >
+                  <Edit2 size={16} />
+                </button>
+                <button
+                  onClick={() => handleDelete(row)}
+                  className="text-red-600 hover:text-red-800"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            ),
+          },
+        ]
+      : []),
   ];
 
-  if (loading) return <Loader fullScreen />;
+  if (loading && isAuthenticated) return <Loader fullScreen />;
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
         <h1 className="text-3xl font-bold text-gray-900">Players Management</h1>
-        <div className="flex gap-3">
-          {/* <Button variant="outline" onClick={() => setIsUploadModalOpen(true)}>
-            <Upload size={20} className="inline mr-2" />
-            Upload CSV
-          </Button> */}
-          <Button onClick={() => handleOpenModal()}>
-            <Plus size={20} className="inline mr-2" />
-            Add Player
-          </Button>
+        <div className="flex gap-3 w-full sm:w-auto">
+          {/* View Toggle Buttons */}
+          {/* <div className="flex border border-gray-300 rounded-lg overflow-hidden">
+            <button
+              onClick={() => setViewMode("table")}
+              className={`px-4 py-2 flex items-center gap-2 transition-colors ${
+                viewMode === "table"
+                  ? "bg-blue-600 text-white"
+                  : "bg-white text-gray-600 hover:bg-gray-50"
+              }`}
+            >
+              <List size={18} />
+              <span className="hidden sm:inline">Table</span>
+            </button>
+            <button
+              onClick={() => setViewMode("grid")}
+              className={`px-4 py-2 flex items-center gap-2 transition-colors ${
+                viewMode === "grid"
+                  ? "bg-blue-600 text-white"
+                  : "bg-white text-gray-600 hover:bg-gray-50"
+              }`}
+            >
+              <Grid size={18} />
+              <span className="hidden sm:inline">Grid</span>
+            </button>
+          </div> */}
+
+          {/* {isAuthenticated && (
+            <Button
+              onClick={() => handleOpenModal()}
+              className="flex-1 sm:flex-initial"
+            >
+              <Plus size={20} className="inline mr-2" />
+              <span className="hidden sm:inline">Add Player</span>
+              <span className="sm:hidden">Add</span>
+            </Button>
+          )} */}
         </div>
       </div>
-      <div className="flex justify-between items-center mb-8">
-        <p className="text-lg text-gray-900">
-          Total Players - {players ? players.length : 0}
-        </p>
-        <p className="text-lg text-gray-900">
-          Available Players - {availablePlayersCount}
-        </p>
-        <p className="text-lg text-gray-900">
-          Sold Players - {soldPlayersCount}
-        </p>
-        <p className="text-lg text-gray-900">
-          Unsold Players - {unsoldPlayersCount}
-        </p>
+
+      {/* Stats Section - Responsive Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="bg-white p-4 rounded-lg shadow-md">
+          <p className="text-sm text-gray-600 mb-1">Total Players</p>
+          <p className="text-2xl font-bold text-gray-900">
+            {players ? players.length : 0}
+          </p>
+        </div>
+        <div className="bg-white p-4 rounded-lg shadow-md">
+          <p className="text-sm text-gray-600 mb-1">Available</p>
+          <p className="text-2xl font-bold text-blue-600">
+            {availablePlayersCount}
+          </p>
+        </div>
+        <div className="bg-white p-4 rounded-lg shadow-md">
+          <p className="text-sm text-gray-600 mb-1">Sold</p>
+          <p className="text-2xl font-bold text-green-600">
+            {soldPlayersCount}
+          </p>
+        </div>
+        <div className="bg-white p-4 rounded-lg shadow-md">
+          <p className="text-sm text-gray-600 mb-1">Unsold</p>
+          <p className="text-2xl font-bold text-red-600">
+            {unsoldPlayersCount}
+          </p>
+        </div>
       </div>
 
       {/* Filters */}
       <div className="bg-white p-4 rounded-lg shadow-md mb-6">
-        <div className="flex items-center gap-4">
-          <Filter size={20} className="text-gray-600" />
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <Filter size={20} className="text-gray-600 hidden sm:block" />
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by player name"
-            className="mb-0 flex-1"
+            className="mb-0 flex-1 w-full"
           />
           <Select
             value={filterRole}
             onChange={(e) => setFilterRole(e.target.value)}
             options={roles.map((r) => ({ value: r, label: r }))}
             placeholder="Filter by Role"
-            className="mb-0 flex-1"
+            className="mb-0 flex-1 w-full sm:w-auto"
           />
           <Select
             value={filterStatus}
@@ -428,9 +572,10 @@ const Players = () => {
             options={[
               { value: "unsold", label: "Unsold" },
               { value: "sold", label: "Sold" },
+              { value: "available", label: "Available" },
             ]}
             placeholder="Filter by Status"
-            className="mb-0 flex-1"
+            className="mb-0 flex-1 w-full sm:w-auto"
           />
           <Button
             variant="outline"
@@ -439,28 +584,57 @@ const Players = () => {
               setFilterStatus("");
               setSearchQuery("");
             }}
+            className="w-full sm:w-auto"
           >
             Clear
           </Button>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-md">
-        <Table columns={columns} data={filteredPlayers} />
-      </div>
+      {/* Conditional Rendering: Table or Grid */}
+      {viewMode === "table" ? (
+        <div className="bg-white rounded-lg shadow-md overflow-x-auto">
+          <Table columns={columns} data={filteredPlayers} />
+        </div>
+      ) : (
+        <div className="bg-white rounded-lg shadow-md p-4">
+          <PlayerGrid
+            data={filteredPlayers}
+            teams={teams}
+            isAuthenticated={isAuthenticated}
+            onEdit={handleOpenModal}
+            onDelete={handleDelete}
+          />
+        </div>
+      )}
 
       <Modal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         title={editingPlayer ? "Edit Player" : "Add New Player"}
       >
-        <form onSubmit={handleSubmit}>
+        <div>
           <Input
             label="Player Name"
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             placeholder="Enter player name"
             required
+          />
+
+          <Select
+            label="Retained By"
+            value={formData.retainedBy}
+            onChange={(e) => {
+              const selectedTeamId = e.target.value;
+              const selectedTeam = teams.find(
+                (team) => team.id === selectedTeamId
+              );
+              setFormData({ ...formData, retainedBy: selectedTeamId });
+              retainedTeam(selectedTeam);
+            }}
+            options={teams.map((r) => ({ value: r.id, label: r.team_name }))}
+            placeholder="Select team"
           />
 
           <Select
@@ -471,23 +645,7 @@ const Players = () => {
             placeholder="Select role"
             required
           />
-          {/* {editingPlayer && (
-            <Select
-              label="Sold to"
-              value={formData.soldTo}
-              onChange={(e) =>
-                setFormData({ ...formData, soldTo: e.target.value })
-              }
-              options={teams.map((r) => ({
-                value: r.id,
-                label: r.team_name,
-              }))}
-              placeholder="Select role"
-              required
-            />
-          )} */}
 
-          {/* Preview existing photo */}
           {formData.existingPhoto && (
             <div className="mb-4">
               <p className="text-sm text-gray-600 mb-1">Current Photo:</p>
@@ -499,7 +657,6 @@ const Players = () => {
             </div>
           )}
 
-          {/* Upload new photo */}
           <UploadInput
             label="Upload New Photo"
             onChange={(e) =>
@@ -508,12 +665,14 @@ const Players = () => {
           />
 
           <div className="flex gap-3 justify-end">
-            <Button variant="outline" onClick={handleCloseModal} type="button">
+            <Button variant="outline" onClick={handleCloseModal}>
               Cancel
             </Button>
-            <Button type="submit">{editingPlayer ? "Update" : "Create"}</Button>
+            <Button onClick={handleSubmit}>
+              {editingPlayer ? "Update" : "Create"}
+            </Button>
           </div>
-        </form>
+        </div>
       </Modal>
 
       {/* CSV Upload Modal */}

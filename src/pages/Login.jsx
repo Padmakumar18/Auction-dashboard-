@@ -8,8 +8,8 @@ import useStore from "../store/useStore";
 import { authAPI } from "../services/api";
 
 const Login = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("padmakumarc187@gmail.com");
+  const [password, setPassword] = useState("Admin@123");
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();

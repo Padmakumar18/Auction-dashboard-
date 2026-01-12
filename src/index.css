@@ -11,6 +11,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: #f9fafb;
+  overflow-x: hidden;
 }
 
 code {
@@ -35,4 +36,37 @@ code {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
+}
+
+/* Mobile-first responsive utilities */
+@media (max-width: 640px) {
+  body {
+    font-size: 14px;
+  }
+}
+
+/* Prevent horizontal scroll on mobile */
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Touch-friendly tap targets */
+@media (hover: none) and (pointer: coarse) {
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Smooth transitions */
+* {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
 }
