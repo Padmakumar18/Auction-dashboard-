@@ -14,6 +14,8 @@ import useStore from "../store/useStore";
 import { playersAPI, teamsAPI, helperAPI } from "../services/api";
 import { formatCurrency, validatePlayer, parseCSV } from "../utils/helpers";
 
+import { useNavigate } from "react-router-dom";
+
 const Players = () => {
   const {
     teams,
@@ -38,14 +40,16 @@ const Players = () => {
     existingPhoto: null,
   });
 
+  const navigate = useNavigate();
+
   const [helper, setHelper] = useState([]);
   // const [selectTeam, setSelectTeam] = useState([]); -> for Options values
   const [filterRole, setFilterRole] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
-  const [selectedTeam, setSlectedTeam] = useState(null);
 
-  const [isAlreadyRetained, setIsAlreadyRetained] = useState(false);
-  const [alreadyRetainedPlayer, SetAlreadyRetainedPlayer] = useState(false);
+  const [selectedTeam, setSlectedTeam] = useState(null); // -> Current slected team
+  const [isAlreadyRetained, setIsAlreadyRetained] = useState(false); // -> T or F
+  const [oldRetainedTeam, setOldRetainedTeam] = useState(null); // -> Old team data
 
   const [unsoldPlayersCount, setUnsoldPlayersCount] = useState(0);
   const [soldPlayersCount, setSoldPlayersCount] = useState(0);
@@ -123,15 +127,6 @@ const Players = () => {
       setTeams(getAllTeams);
       setPlayers(getAllPlayers);
 
-      // if (teams && selectTeam.length === 0) {
-      //   const teamOptions = teams.map((e) => ({
-      //     value: e.id,
-      //     label: e.team_name,
-      //   }));
-
-      //   setSelectTeam(teamOptions);
-      // }
-
       console.log("players");
       console.log(players);
 
@@ -150,52 +145,27 @@ const Players = () => {
   };
 
   const retainedTeam = (team) => {
-    console.log(isAlreadyRetained);
     console.log("team");
     console.log(team);
-
+    if (team.retained_playres_count === team.max_retain_players) {
+      toast.error("Maximum Retain players reached");
+      setFormData({ retainedBy: "" });
+      return;
+    }
     if (!isAlreadyRetained && team.players_count === team.max_players) {
       toast.error("Maximum players reached");
       setFormData({ retainedBy: "" });
+      return;
     }
     setSlectedTeam(team);
-    console.log("selectedTeam");
-    console.log(selectedTeam);
     // setFormData({ retainedBy: "" });
   };
-
-  // If player didnt retained :
-  // Update teams table (
-  // points left , points used , balance players , players count ,
-  // )
-
-  // Update player table (
-  // status , sold_to , sold_price , sold_team , retained_team
-  // )
-
-  // If already retained and change the player retained :
-  // Update teams table (
-  // No changes in teams table
-  // )
-  // update players table (
-  // status , sold_to , sold_price , sold_team , retained_team -> for both players
-  // )
-
-  // If users wants to remove retained player
-  // Update teams table (
-  // total points , points left , points used , balance players , players count ,
-  // )
-
-  // Update player table (
-  // status , sold_to , sold_price , sold_team , retained_team -> for selected player
-  // )
 
   const handleOpenModal = (player = null) => {
     if (player) {
       if (player.retained_team != null) {
-        /// This is for update player sold price
-        SetAlreadyRetainedPlayer(player.id);
         setIsAlreadyRetained(true);
+        setOldRetainedTeam(player.retained_team);
       }
       setEditingPlayer(player);
       const matchedRole =
@@ -233,6 +203,7 @@ const Players = () => {
   };
 
   const handleSubmit = async (e) => {
+    const toastId = toast.loading("Submitting...");
     e.preventDefault();
     const validationErrors = validatePlayer({
       name: formData.name,
@@ -276,36 +247,60 @@ const Players = () => {
         photoUrl = publicUrlData.publicUrl;
       }
 
-      const retainingPlayer = !isAlreadyRetained
-        ? {
-            sold_to: selectedTeam.id,
-            sold_team: selectedTeam.team_name,
-            sold_price: helper[0].base_price,
-            status: "sold",
-            retained_team: selectedTeam.id,
-          }
-        : {};
+      const retainingPlayer =
+        (!isAlreadyRetained || oldRetainedTeam != null) && selectedTeam != null
+          ? {
+              sold_to: selectedTeam.id,
+              sold_team: selectedTeam.team_name,
+              sold_price: helper[0].base_price,
+              status: "sold",
+              retained_team: selectedTeam.id,
+            }
+          : {};
+
+      console.log("selectedTeam");
+      console.log(selectedTeam);
+
+      console.log("retainingPlayer");
+      console.log(retainingPlayer);
 
       const playerData = {
         name: formData.name,
         role: normalizedRole,
-        base_price: parseInt(helper[0].base_price),
         retained_team: formData.retainedBy,
         player_photo: photoUrl,
         ...retainingPlayer,
       };
 
-      if (!isAlreadyRetained) {
+      if (
+        (!isAlreadyRetained || oldRetainedTeam != null) &&
+        selectedTeam != null
+      ) {
         const teamData = {
-          points_left: selectedTeam.total_points - helper[0].base_price,
+          points_left: selectedTeam.points_left - helper[0].base_price,
           points_used: selectedTeam.points_used + helper[0].base_price,
           balance_players_count:
             parseInt(selectedTeam.balance_players_count) - 1,
           players_count: parseInt(selectedTeam.players_count) + 1,
+          retained_playres_count: selectedTeam.players_count + 1,
         };
 
         const updated = teamsAPI.update(selectedTeam.id, teamData);
         updateTeam(selectedTeam.id, updated);
+      }
+
+      if (oldRetainedTeam != null) {
+        const team = teams.find((t) => t.id === oldRetainedTeam);
+
+        const teamData = {
+          points_left: team.points_left + helper[0].base_price,
+          points_used: team.points_used - helper[0].base_price,
+          balance_players_count: parseInt(team.balance_players_count) + 1,
+          players_count: parseInt(team.players_count) - 1,
+        };
+
+        const updated = teamsAPI.update(team.id, teamData);
+        updateTeam(team.id, updated);
       }
 
       console.log("playerData");
@@ -315,10 +310,11 @@ const Players = () => {
       updatePlayer(editingPlayer.id, updated);
 
       toast.success("Player updated successfully!");
-
-      handleCloseModal();
     } catch (error) {
       toast.error(error.message || "Failed to save player");
+    } finally {
+      toast.dismiss(toastId);
+      handleCloseModal();
     }
   };
 
@@ -508,16 +504,16 @@ const Players = () => {
             </button>
           </div> */}
 
-          {/* {isAuthenticated && (
-            <Button
-              onClick={() => handleOpenModal()}
-              className="flex-1 sm:flex-initial"
-            >
-              <Plus size={20} className="inline mr-2" />
-              <span className="hidden sm:inline">Add Player</span>
-              <span className="sm:hidden">Add</span>
-            </Button>
-          )} */}
+          {/* {isAuthenticated && ( */}
+          <Button
+            onClick={() => navigate("/teams")}
+            className="flex-1 sm:flex-initial"
+          >
+            {/* <Plus size={20} className="inline mr-2" /> */}
+            <span className="hidden sm:inline">View Teams</span>
+            {/* <span className="sm:hidden">Add</span> */}
+          </Button>
+          {/* )} */}
         </div>
       </div>
 
@@ -624,16 +620,24 @@ const Players = () => {
 
           <Select
             label="Retained By"
-            value={formData.retainedBy}
+            value={formData.retainedBy ?? ""}
             onChange={(e) => {
               const selectedTeamId = e.target.value;
               const selectedTeam = teams.find(
                 (team) => team.id === selectedTeamId
               );
-              setFormData({ ...formData, retainedBy: selectedTeamId });
+
+              setFormData({
+                ...formData,
+                retainedBy: selectedTeamId,
+              });
+
               retainedTeam(selectedTeam);
             }}
-            options={teams.map((r) => ({ value: r.id, label: r.team_name }))}
+            options={teams.map((r) => ({
+              value: r.id,
+              label: r.team_name,
+            }))}
             placeholder="Select team"
           />
 

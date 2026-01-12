@@ -14,11 +14,15 @@ import {
   calculateRecommendedBid,
 } from "../utils/helpers";
 
+import { useNavigate } from "react-router-dom";
+
 const Teams = () => {
   const { players, teams, setTeams, addTeam, updateTeam, isAuthenticated } =
     useStore();
   const [helper, setHelper] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const navigate = useNavigate();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTeam, setEditingTeam] = useState(null);
@@ -42,6 +46,7 @@ const Teams = () => {
   // Auto-refresh every 15 seconds when not logged in
   useEffect(() => {
     if (!isAuthenticated) {
+      console.log("Yessss");
       const interval = setInterval(() => {
         loadTeams();
       }, 15000); // 15 seconds
@@ -150,6 +155,7 @@ const Teams = () => {
         points_left: parseInt(helper[0].total_points),
         players_count: 0,
         max_players: parseInt(helper[0].max_players),
+        max_retain_players: parseInt(helper[0].max_retain_players),
         balance_players_count: parseInt(helper[0].max_players),
       };
 
@@ -261,6 +267,9 @@ const Teams = () => {
             Add Team
           </Button>
         )}
+        {/* {isAuthenticated && ( */}
+        <Button onClick={() => navigate("/players")}>View Players</Button>
+        {/* )} */}
       </div>
 
       {/* Search Input */}
