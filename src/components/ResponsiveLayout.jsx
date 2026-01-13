@@ -34,11 +34,7 @@ const ResponsiveLayout = ({ children }) => {
     { path: "/auction", icon: Gavel, label: "Auction" },
     { path: "/analytics", icon: BarChart3, label: "Analytics" },
     { path: "/admin", icon: Settings, label: "Admin" },
-    {
-      path: "/player-registration",
-      icon: FilesIcon,
-      label: "Player Registration",
-    },
+
     {
       path: "/teams-lot",
       icon: FileKeyIcon,
@@ -49,6 +45,11 @@ const ResponsiveLayout = ({ children }) => {
     //   icon: FileKeyIcon,
     //   label: "Player Registration",
     // },
+    {
+      path: "/player-registration",
+      icon: FilesIcon,
+      label: "Player Registration",
+    },
   ];
 
   // Limited navigation for non-authenticated users (only Teams and Players)

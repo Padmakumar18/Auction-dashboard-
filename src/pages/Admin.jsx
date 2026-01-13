@@ -47,6 +47,7 @@ const Admin = () => {
           balance_players_count: team.max_players,
           players_count: 0,
           group_name: null,
+          retained_playres_count: null,
         })
       );
 
@@ -67,11 +68,11 @@ const Admin = () => {
 
       setIsResetModalOpen(false);
       toast.success("Auction reset successfully!");
-      toast.dismiss(loadingToast);
     } catch (error) {
       toast.error("Failed to reset auction: " + error.message);
     } finally {
       setLoading(false);
+      toast.dismiss(loadingToast);
     }
   };
 

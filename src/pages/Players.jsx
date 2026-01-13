@@ -43,7 +43,6 @@ const Players = () => {
   const navigate = useNavigate();
 
   const [helper, setHelper] = useState([]);
-  // const [selectTeam, setSelectTeam] = useState([]); -> for Options values
   const [filterRole, setFilterRole] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
 
@@ -162,32 +161,32 @@ const Players = () => {
   };
 
   const handleOpenModal = (player = null) => {
-    if (player) {
-      if (player.retained_team != null) {
-        setIsAlreadyRetained(true);
-        setOldRetainedTeam(player.retained_team);
-      }
-      setEditingPlayer(player);
-      const matchedRole =
-        roles.find((r) => r.toLowerCase() === player.role.toLowerCase()) || "";
-
-      setFormData({
-        name: player.name,
-        role: matchedRole,
-        photoFile: null,
-        retainedBy: player.retained_team,
-        existingPhoto: player.player_photo,
-      });
-    } else {
-      setEditingPlayer(null);
-      setFormData({
-        name: "",
-        role: "",
-        retainedBy: "",
-        photoFile: null,
-        existingPhoto: null,
-      });
+    // if (player) {
+    if (player.retained_team != null) {
+      setIsAlreadyRetained(true);
+      setOldRetainedTeam(player.retained_team);
     }
+    setEditingPlayer(player);
+    const matchedRole =
+      roles.find((r) => r.toLowerCase() === player.role.toLowerCase()) || "";
+
+    setFormData({
+      name: player.name,
+      role: matchedRole,
+      photoFile: null,
+      retainedBy: player.retained_team,
+      existingPhoto: player.player_photo,
+    });
+    // } else {
+    //   setEditingPlayer(null);
+    //   setFormData({
+    //     name: "",
+    //     role: "",
+    //     retainedBy: "",
+    //     photoFile: null,
+    //     existingPhoto: null,
+    //   });
+    // }
     setIsModalOpen(true);
   };
 
@@ -272,17 +271,13 @@ const Players = () => {
         ...retainingPlayer,
       };
 
-      if (
-        (!isAlreadyRetained || oldRetainedTeam != null) &&
-        selectedTeam != null
-      ) {
+      if (!isAlreadyRetained || oldRetainedTeam != null) {
         const teamData = {
           points_left: selectedTeam.points_left - helper[0].base_price,
           points_used: selectedTeam.points_used + helper[0].base_price,
-          balance_players_count:
-            parseInt(selectedTeam.balance_players_count) - 1,
-          players_count: parseInt(selectedTeam.players_count) + 1,
-          retained_playres_count: selectedTeam.players_count + 1,
+          balance_players_count: selectedTeam.balance_players_count - 1,
+          players_count: selectedTeam.players_count + 1,
+          retained_playres_count: selectedTeam.retained_playres_count + 1,
         };
 
         const updated = teamsAPI.update(selectedTeam.id, teamData);
@@ -295,8 +290,9 @@ const Players = () => {
         const teamData = {
           points_left: team.points_left + helper[0].base_price,
           points_used: team.points_used - helper[0].base_price,
-          balance_players_count: parseInt(team.balance_players_count) + 1,
-          players_count: parseInt(team.players_count) - 1,
+          balance_players_count: team.balance_players_count + 1,
+          players_count: team.players_count - 1,
+          retained_playres_count: team.retained_playres_count - 1,
         };
 
         const updated = teamsAPI.update(team.id, teamData);
@@ -315,6 +311,9 @@ const Players = () => {
     } finally {
       toast.dismiss(toastId);
       handleCloseModal();
+      setSlectedTeam(null);
+      setIsAlreadyRetained(false);
+      setOldRetainedTeam(null);
     }
   };
 
