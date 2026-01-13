@@ -114,7 +114,7 @@ export default function TeamLot() {
       setShuffledTeam(availableTeams[randomIndex]);
       count++;
 
-      if (count > 20) {
+      if (count > 30) {
         clearInterval(interval);
         const finalIndex = Math.floor(Math.random() * availableTeams.length);
         setShuffledTeam(availableTeams[finalIndex]);
