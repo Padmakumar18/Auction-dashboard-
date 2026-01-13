@@ -17,8 +17,15 @@ import {
 import { useNavigate } from "react-router-dom";
 
 const Teams = () => {
-  const { players, teams, setTeams, addTeam, updateTeam, isAuthenticated } =
-    useStore();
+  const {
+    players,
+    teams,
+    setTeams,
+    updatePlayer,
+    addTeam,
+    updateTeam,
+    isAuthenticated,
+  } = useStore();
   const [helper, setHelper] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -132,6 +139,88 @@ const Teams = () => {
     setIsModalOpen(false);
     setEditingTeam(null);
     setFormData({ name: "", total_points: "" });
+  };
+
+  const handleDeletePlayer = (player) => {
+    console.log("player");
+    console.log(player);
+    toast(
+      (t) => (
+        <div className="flex flex-col gap-3">
+          <p className="text-sm font-medium text-white-900">
+            Are you sure you want to delete this player?
+          </p>
+
+          <div className="flex justify-end gap-2">
+            <button
+              className="px-3 py-1 text-sm bg-gray-200 text-black rounded"
+              onClick={() => toast.dismiss(t.id)}
+            >
+              Cancel
+            </button>
+
+            <button
+              className="px-3 py-1 text-sm bg-red-600 text-white rounded"
+              onClick={async () => {
+                toast.dismiss(t.id);
+                const loading = toast.loading("Loading...");
+
+                try {
+                  const team = teams.find((t) => t.id === player.sold_to);
+
+                  const teamData =
+                    player.retained_team != null
+                      ? {
+                          points_left: team.points_left + helper[0].base_price,
+                          points_used: team.points_used - helper[0].base_price,
+                          balance_players_count: team.balance_players_count + 1,
+                          players_count: team.players_count - 1,
+                          retained_playres_count:
+                            team.retained_playres_count - 1,
+                        }
+                      : {
+                          points_left: team.points_left + player.sold_price,
+                          points_used: team.points_used - player.sold_price,
+                          balance_players_count: team.balance_players_count + 1,
+                          players_count: team.players_count - 1,
+                        };
+
+                  const updatedTeam = await teamsAPI.update(team.id, teamData);
+                  updateTeam(team.id, updatedTeam);
+
+                  const playerData = {
+                    retained_team: null,
+                    sold_to: null,
+                    sold_team: null,
+                    sold_price: null,
+                    status: "available",
+                    retained_team: null,
+                  };
+
+                  const updated = await playersAPI.update(
+                    player.id,
+                    playerData
+                  );
+                  updatePlayer(player.id, updated);
+
+                  toast.success("Player deleted successfully!");
+                } catch (error) {
+                  toast.error(
+                    "Failed to delete player: " + (error.message || "")
+                  );
+                } finally {
+                  toast.dismiss(loading);
+                  closePlayersModal();
+                }
+              }}
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      ),
+      { duration: Infinity }
+    );
   };
 
   const handleSubmit = async (e) => {
@@ -552,14 +641,19 @@ const Teams = () => {
             {selectedTeamPlayers.map((player) => (
               <div
                 key={player.id}
-                className="border rounded-lg p-3 shadow-sm bg-white"
+                className="relative border rounded-lg p-3 shadow-sm bg-white"
               >
-                {selectedTeamName?.id === player.retained_team && (
-                  <p className="font-bold text-red-600">Retain Player</p>
+                {/* Delete Icon */}
+                {isAuthenticated && (
+                  <button
+                    onClick={() => handleDeletePlayer(player)}
+                    className="absolute top-2 right-2 text-red-400 hover:text-red-600 transition"
+                    title="Delete Player"
+                  >
+                    <Trash2 size={20} />
+                  </button>
                 )}
 
-                {/* Player Photo */}
-                {/* Player Photo */}
                 <div className="w-40 h-40 mb-4 rounded-lg overflow-hidden border bg-gray-100 flex items-center justify-center">
                   <img
                     src={player.player_photo}
@@ -567,6 +661,9 @@ const Teams = () => {
                     className="w-full h-full object-contain"
                   />
                 </div>
+                {selectedTeamName?.id === player.retained_team && (
+                  <p className="font-bold text-red-600 mb-2">Retain Player</p>
+                )}
 
                 <p className="font-bold text-gray-900">{player.name}</p>
                 <p className="text-sm text-gray-600">Role: {player.role}</p>
@@ -580,7 +677,7 @@ const Teams = () => {
             ))}
           </div>
         ) : (
-          <div className="text-center">No players </div>
+          <div className="text-center">No players</div>
         )}
       </Modal>
     </div>
