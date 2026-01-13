@@ -23,6 +23,7 @@ const Players = () => {
     setTeams,
     players,
     setPlayers,
+    removePlayer,
     updatePlayer,
     isAuthenticated,
   } = useStore();
@@ -54,7 +55,7 @@ const Players = () => {
   const [soldPlayersCount, setSoldPlayersCount] = useState(0);
   const [availablePlayersCount, setAvailablePlayersCount] = useState(0);
 
-  const roles = ["Batsman", "Bowler", "AllRounder", "Wicket-Keeper"];
+  const roles = ["Batsman", "Bowler", "AllRounder"];
 
   useEffect(() => {
     loadData();
@@ -144,6 +145,10 @@ const Players = () => {
   };
 
   const retainedTeam = (team) => {
+    if (!team) {
+      setSlectedTeam(null);
+      return;
+    }
     console.log("team");
     console.log(team);
 
@@ -167,7 +172,6 @@ const Players = () => {
   };
 
   const handleOpenModal = (player = null) => {
-    // if (player) {
     if (player.retained_team != null) {
       setIsAlreadyRetained(true);
       setOldRetainedTeam(player.retained_team);
@@ -183,16 +187,6 @@ const Players = () => {
       retainedBy: player.retained_team,
       existingPhoto: player.player_photo,
     });
-    // } else {
-    //   setEditingPlayer(null);
-    //   setFormData({
-    //     name: "",
-    //     role: "",
-    //     retainedBy: "",
-    //     photoFile: null,
-    //     existingPhoto: null,
-    //   });
-    // }
     setIsModalOpen(true);
   };
 
@@ -224,8 +218,7 @@ const Players = () => {
     const ROLE_NORMALIZATION_MAP = {
       Batsman: "batsman",
       Bowler: "bowler",
-      "All-Rounder": "allrounder",
-      "Wicket-Keeper": "wicketkeeper",
+      AllRounder: "allrounder",
     };
 
     const normalizedRole = ROLE_NORMALIZATION_MAP[formData.role];
@@ -277,7 +270,10 @@ const Players = () => {
         ...retainingPlayer,
       };
 
-      if (!isAlreadyRetained || oldRetainedTeam != null) {
+      if (
+        (!isAlreadyRetained || oldRetainedTeam != null) &&
+        selectedTeam != null
+      ) {
         const teamData = {
           points_left: selectedTeam.points_left - helper[0].base_price,
           points_used: selectedTeam.points_used + helper[0].base_price,
@@ -286,7 +282,7 @@ const Players = () => {
           retained_playres_count: selectedTeam.retained_playres_count + 1,
         };
 
-        const updated = teamsAPI.update(selectedTeam.id, teamData);
+        const updated = await teamsAPI.update(selectedTeam.id, teamData);
         updateTeam(selectedTeam.id, updated);
       }
 
@@ -301,7 +297,7 @@ const Players = () => {
           retained_playres_count: team.retained_playres_count - 1,
         };
 
-        const updated = teamsAPI.update(team.id, teamData);
+        const updated = await teamsAPI.update(team.id, teamData);
         updateTeam(team.id, updated);
       }
 
@@ -327,7 +323,7 @@ const Players = () => {
     toast(
       (t) => (
         <div className="flex flex-col gap-3">
-          <p className="text-sm font-medium text-white-900">
+          <p className="text-sm font-medium text-white">
             Are you sure you want to delete this player?
           </p>
 
@@ -343,15 +339,55 @@ const Players = () => {
               className="px-3 py-1 text-sm bg-red-600 text-white rounded"
               onClick={async () => {
                 toast.dismiss(t.id);
+                const loadingToast = toast.loading("Deleting player...");
 
                 try {
+                  console.log("player.id");
+                  console.log(player.id);
                   await playersAPI.delete(player);
-                  setPlayers(players.filter((p) => p.id !== player.id));
-                  toast.success("Player deleted successfully!");
+                  removePlayer(player.id);
+
+                  if (player.sold_to) {
+                    const team = teams.find((t) => t.id === player.sold_to);
+
+                    if (team) {
+                      const teamData =
+                        player.retained_team != null
+                          ? {
+                              points_left:
+                                team.points_left + helper[0].base_price,
+                              points_used:
+                                team.points_used - helper[0].base_price,
+                              balance_players_count:
+                                team.balance_players_count + 1,
+                              players_count: team.players_count - 1,
+                              retained_playres_count:
+                                team.retained_playres_count - 1,
+                            }
+                          : {
+                              points_left: team.points_left + player.sold_price,
+                              points_used: team.points_used - player.sold_price,
+                              balance_players_count:
+                                team.balance_players_count + 1,
+                              players_count: team.players_count - 1,
+                            };
+
+                      const updatedTeam = await teamsAPI.update(
+                        team.id,
+                        teamData
+                      );
+                      updateTeam(team.id, updatedTeam);
+                    }
+                  }
+
+                  toast.success("Player deleted successfully");
                 } catch (error) {
                   toast.error(
-                    "Failed to delete player: " + (error.message || "")
+                    "Failed to delete player: " +
+                      (error?.message || "Unexpected error")
                   );
+                } finally {
+                  toast.dismiss(loadingToast);
                 }
               }}
             >

@@ -36,6 +36,10 @@ const useStore = create((set, get) => ({
         p.id === id ? { ...p, ...updates } : p
       ),
     })),
+  removePlayer: (id) =>
+    set((state) => ({
+      players: state.players.filter((p) => p.id !== id),
+    })),
 
   // Auction state
   currentPlayer: null,

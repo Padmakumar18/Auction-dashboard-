@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import useStore from "../store/useStore";
-import { Shuffle, X, Calendar, Users } from "lucide-react";
+import { Shuffle, X, Calendar, Users, ArrowLeft } from "lucide-react";
 
 export default function TeamLot() {
   const {
@@ -12,7 +12,6 @@ export default function TeamLot() {
     updatePlayer,
     isAuthenticated,
   } = useStore();
-  // const [teams] = useState(Array.from({ length: 12 }, (_, i) => i + 1));
   const totalTeams = teams.length;
   const [step, setStep] = useState(1);
   const [numGroups, setNumGroups] = useState("");
@@ -23,18 +22,17 @@ export default function TeamLot() {
   const [isShuffling, setIsShuffling] = useState(false);
   const [fixtures, setFixtures] = useState([]);
 
-  const generateRoundRobin = (teamNumbers) => {
+  const generateRoundRobin = (teamList) => {
     const matches = [];
-    const n = teamNumbers.length;
+    const n = teamList.length;
 
     if (n < 2) return matches;
 
-    // Round-robin algorithm
     for (let i = 0; i < n - 1; i++) {
       for (let j = i + 1; j < n; j++) {
         matches.push({
-          team1: teamNumbers[i],
-          team2: teamNumbers[j],
+          team1: teamList[i],
+          team2: teamList[j],
           matchNumber: matches.length + 1,
         });
       }
@@ -45,10 +43,26 @@ export default function TeamLot() {
 
   // Generate fixtures for all groups
   const generateAllFixtures = () => {
-    const allFixtures = groups.map((group, idx) => ({
-      groupNumber: idx + 1,
-      matches: generateRoundRobin(group),
-    }));
+    const allFixtures = groups.map((group, idx) => {
+      let matches = generateRoundRobin(group);
+
+      // Shuffle matches using Fisher-Yates
+      for (let i = matches.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [matches[i], matches[j]] = [matches[j], matches[i]];
+      }
+
+      // Reassign matchNumber sequentially after shuffle
+      matches = matches.map((match, index) => ({
+        ...match,
+        matchNumber: index + 1,
+      }));
+
+      return {
+        groupNumber: idx + 1,
+        matches,
+      };
+    });
 
     setFixtures(allFixtures);
     setStep(4);
@@ -75,9 +89,17 @@ export default function TeamLot() {
     const tpg = parseInt(teamsPerGroup);
 
     if (ng > 0 && tpg > 0) {
-      setAvailableTeams(Array.from({ length: totalTeams }, (_, i) => i + 1));
-      setGroups(Array.from({ length: ng }, () => []));
-      setStep(2);
+      if (ng === 1) {
+        // Special case: only one group, assign all teams directly
+        setGroups([[...teams]]);
+        setAvailableTeams([]);
+        setStep(3); // Skip to final groups directly
+      } else {
+        // Multiple groups: go through normal lottery process
+        setAvailableTeams([...teams]);
+        setGroups(Array.from({ length: ng }, () => []));
+        setStep(2);
+      }
     }
   };
 
@@ -85,8 +107,8 @@ export default function TeamLot() {
     if (availableTeams.length === 0) return;
 
     setIsShuffling(true);
-
     let count = 0;
+
     const interval = setInterval(() => {
       const randomIndex = Math.floor(Math.random() * availableTeams.length);
       setShuffledTeam(availableTeams[randomIndex]);
@@ -95,8 +117,7 @@ export default function TeamLot() {
       if (count > 20) {
         clearInterval(interval);
         const finalIndex = Math.floor(Math.random() * availableTeams.length);
-        const selectedTeam = availableTeams[finalIndex];
-        setShuffledTeam(selectedTeam);
+        setShuffledTeam(availableTeams[finalIndex]);
         setIsShuffling(false);
       }
     }, 100);
@@ -114,7 +135,10 @@ export default function TeamLot() {
     newGroups[groupIndex].push(shuffledTeam);
     setGroups(newGroups);
 
-    const newAvailableTeams = availableTeams.filter((t) => t !== shuffledTeam);
+    const newAvailableTeams = availableTeams.filter(
+      (t) => t.id !== shuffledTeam.id
+    );
+
     setAvailableTeams(newAvailableTeams);
 
     const groupsCompleted = newGroups.filter(
@@ -140,16 +164,14 @@ export default function TeamLot() {
     }
   };
 
-  const removeTeamFromGroup = (groupIndex, teamNumber) => {
+  const removeTeamFromGroup = (groupIndex, team) => {
     const newGroups = [...groups];
     newGroups[groupIndex] = newGroups[groupIndex].filter(
-      (t) => t !== teamNumber
+      (t) => t.id !== team.id
     );
     setGroups(newGroups);
 
-    const newAvailableTeams = [...availableTeams, teamNumber].sort(
-      (a, b) => a - b
-    );
+    const newAvailableTeams = [...availableTeams, team];
     setAvailableTeams(newAvailableTeams);
 
     if (step === 3) {
@@ -168,6 +190,16 @@ export default function TeamLot() {
     setFixtures([]);
   };
 
+  // Function to get teams that are NOT in any group
+  const getRemainingTeamsList = () => {
+    // Flatten all teams currently in groups
+    const teamsInGroups = groups.flat();
+    const teamIdsInGroups = teamsInGroups.map((team) => team.id);
+
+    // Return teams that are not in any group
+    return teams.filter((team) => !teamIdsInGroups.includes(team.id));
+  };
+
   return (
     <div className="min-h-screen p-8 bg-gradient-to-br from-sky-50 to-blue-50">
       <div className="max-w-6xl mx-auto">
@@ -177,14 +209,24 @@ export default function TeamLot() {
 
         {step === 1 && (
           <div className="bg-white rounded-lg shadow-lg p-8 border border-sky-100">
-            <h2 className="text-2xl font-semibold mb-6 text-sky-800">Setup</h2>
+            <h1 className="text-2xl mb-4">
+              Total Teams :{" "}
+              <span className="font-semibold">{teams.length}</span>
+            </h1>
 
             <div className="space-y-6">
-              <div className="bg-sky-50 p-4 rounded-lg border border-sky-100">
-                <p className="text-sm text-sky-800">
-                  Total Teams:{" "}
-                  <span className="font-semibold">{totalTeams}</span>
-                </p>
+              <div className="bg-sky-200 p-4 rounded-lg border border-sky-500">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  {teams.map((team) => (
+                    <div
+                      key={team.id}
+                      className="bg-white text-sky-700 text-sm font-medium px-3 py-2 
+                   rounded-lg border border-sky-100 text-center"
+                    >
+                      {team.team_name}
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <div>
@@ -243,15 +285,27 @@ export default function TeamLot() {
         {step === 2 && (
           <div className="space-y-6">
             <div className="bg-white rounded-lg shadow-lg p-8 border border-sky-100">
-              <h2 className="text-2xl font-semibold mb-4 text-sky-800">
-                Draw Team
-              </h2>
+              <div className="flex items-center gap-4 mb-6">
+                <button
+                  onClick={() => setStep(1)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg 
+               border border-sky-300 text-sky-700 
+               font-semibold hover:bg-sky-50 transition"
+                >
+                  <ArrowLeft size={18} />
+                  Back
+                </button>
+
+                <h2 className="text-2xl font-semibold text-sky-800">
+                  Draw Team
+                </h2>
+              </div>
 
               <div className="mb-6">
                 <div className="bg-gradient-to-br from-sky-50 to-white rounded-lg p-8 mb-4 min-h-32 flex items-center justify-center border-2 border-sky-200">
                   {shuffledTeam !== null ? (
                     <div className="text-6xl font-bold text-sky-600">
-                      Team {shuffledTeam}
+                      {shuffledTeam.team_name}
                     </div>
                   ) : (
                     <div className="text-sky-400 text-xl">
@@ -271,7 +325,7 @@ export default function TeamLot() {
                   </button>
                 </div>
 
-                {shuffledTeam !== null && (
+                {shuffledTeam !== null && !isShuffling && (
                   <div>
                     <h3 className="text-lg font-semibold text-sky-800 mb-3">
                       Assign to Group:
@@ -300,9 +354,12 @@ export default function TeamLot() {
                 )}
               </div>
 
+              {/* Show only teams that are NOT in any group */}
               <div className="text-sm text-sky-700 bg-sky-50 p-3 rounded-lg border border-sky-100">
                 <span className="font-semibold">Remaining Teams:</span>{" "}
-                {availableTeams.join(", ")}
+                {availableTeams.length > 0
+                  ? availableTeams.map((team) => team.team_name).join(", ")
+                  : "No teams remaining"}
               </div>
             </div>
 
@@ -310,35 +367,51 @@ export default function TeamLot() {
               <h3 className="text-xl font-semibold mb-4 text-sky-800">
                 Current Groups
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+              <div className="space-y-6">
                 {groups.map((group, idx) => (
                   <div
                     key={idx}
-                    className="bg-gradient-to-br from-sky-50 to-white rounded-lg p-4 border border-sky-200"
+                    className="bg-gradient-to-br from-sky-50 to-white 
+                   rounded-lg p-4 border border-sky-200"
                   >
-                    <h4 className="font-semibold text-sky-800 mb-2">
+                    {/* Group Header */}
+                    <h4 className="font-semibold text-sky-800 mb-3">
                       Group {idx + 1}
                     </h4>
-                    <div className="space-y-2">
+
+                    {/* Teams – Horizontal Flow */}
+                    <div className="grid grid-flow-col auto-cols-fr gap-3">
                       {group.map((team, teamIdx) => (
                         <div
                           key={teamIdx}
-                          className="bg-white px-3 py-2 rounded text-sm border border-sky-100 flex items-center justify-between group hover:border-sky-300 transition"
+                          className="bg-white px-3 py-2 rounded-lg text-sm 
+                         border border-sky-100 
+                         flex items-center justify-between 
+                         hover:border-sky-300 transition"
                         >
                           <span className="font-medium text-sky-900">
-                            Team {team}
+                            {team.team_name}
                           </span>
+
                           <button
                             onClick={() => removeTeamFromGroup(idx, team)}
-                            className="opacity-0 group-hover:opacity-100 transition text-red-500 hover:text-red-700"
+                            className="text-red-500 hover:text-red-700"
                             title="Remove team"
                           >
                             <X size={16} />
                           </button>
                         </div>
                       ))}
+
+                      {/* Remaining Slots */}
                       {group.length < parseInt(teamsPerGroup) && (
-                        <div className="text-sky-400 text-sm italic px-3 py-2">
+                        <div
+                          className="flex items-center justify-center 
+                            text-sky-400 text-sm italic 
+                            border-2 border-dashed border-sky-200 
+                            rounded-lg px-3 py-2"
+                        >
                           {parseInt(teamsPerGroup) - group.length} remaining
                         </div>
                       )}
@@ -352,33 +425,46 @@ export default function TeamLot() {
 
         {step === 3 && (
           <div className="bg-white rounded-lg shadow-lg p-8 border border-sky-100">
-            <h2 className="text-2xl font-semibold mb-6 text-sky-800">
-              Final Groups
-            </h2>
+            <div className="flex items-center gap-4 mb-6">
+              <button
+                onClick={() => setStep(2)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg 
+               border border-sky-300 text-sky-700 
+               font-semibold hover:bg-sky-50 transition"
+              >
+                <ArrowLeft size={18} />
+                Back
+              </button>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+              <h2 className="text-2xl font-semibold text-sky-800">
+                Final Groups
+              </h2>
+            </div>
+
+            <div className="space-y-6 mb-6">
               {groups.map((group, idx) => (
                 <div
                   key={idx}
-                  className="bg-gradient-to-br from-sky-50 to-white rounded-lg p-6 border-2 border-sky-200"
+                  className="bg-gradient-to-br from-sky-50 to-white 
+                 rounded-lg p-6 border-2 border-sky-200"
                 >
+                  {/* Group Header */}
                   <h3 className="text-xl font-bold text-sky-800 mb-4">
                     Group {idx + 1}
                   </h3>
-                  <div className="space-y-2">
+
+                  {/* Teams in Horizontal Grid */}
+                  <div className="grid grid-flow-col auto-cols-fr gap-4">
                     {group.map((team, teamIdx) => (
                       <div
                         key={teamIdx}
-                        className="bg-white px-4 py-2 rounded-lg shadow-sm font-semibold text-sky-900 border border-sky-100 flex items-center justify-between group hover:border-sky-300 transition"
+                        className="bg-white px-4 py-3 rounded-lg shadow-sm 
+                       font-semibold text-sky-900 
+                       border border-sky-100 
+                       flex items-center justify-between 
+                       hover:border-sky-300 transition"
                       >
-                        <span>Team {team}</span>
-                        <button
-                          onClick={() => removeTeamFromGroup(idx, team)}
-                          className="opacity-0 group-hover:opacity-100 transition text-red-500 hover:text-red-700"
-                          title="Remove team"
-                        >
-                          <X size={16} />
-                        </button>
+                        <span>{team.team_name}</span>
                       </div>
                     ))}
                   </div>
@@ -394,12 +480,6 @@ export default function TeamLot() {
                 <Calendar size={20} />
                 Generate Match Fixtures
               </button>
-              <button
-                onClick={reset}
-                className="flex-1 bg-sky-600 text-white py-3 rounded-lg font-semibold hover:bg-sky-700 transition"
-              >
-                Start New Lottery
-              </button>
             </div>
           </div>
         )}
@@ -408,22 +488,36 @@ export default function TeamLot() {
           <div className="space-y-6">
             <div className="bg-white rounded-lg shadow-lg p-8 border border-sky-100">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-semibold text-sky-800 flex items-center gap-2">
-                  <Calendar className="text-sky-600" size={28} />
-                  Match Fixtures - Round Robin
-                </h2>
+                <div className="flex items-center gap-4 mb-6">
+                  <button
+                    onClick={() => setStep(3)}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg 
+               border border-sky-300 text-sky-700 
+               font-semibold hover:bg-sky-50 transition"
+                  >
+                    <ArrowLeft size={18} />
+                    Back
+                  </button>
+
+                  <h2 className="text-2xl font-semibold text-sky-800 flex items-center gap-2">
+                    <Calendar className="text-sky-600" size={28} />
+                    Match Fixtures - Round Robin
+                  </h2>
+                </div>
               </div>
 
               {fixtures.map((groupFixture) => (
                 <div key={groupFixture.groupNumber} className="mb-8 last:mb-0">
                   <div className="bg-gradient-to-r from-sky-600 to-blue-600 text-white px-6 py-3 rounded-t-lg">
-                    <h3 className="text-xl font-bold flex items-center gap-2">
-                      <Users size={20} />
-                      Group {groupFixture.groupNumber} Fixtures
+                    <h3 className="text-xl font-bold flex items-center justify-between">
+                      <span className="flex items-center gap-2">
+                        <Users size={20} />
+                        Group {groupFixture.groupNumber} Fixtures
+                      </span>
+                      <span className="text-sky-100 text-sm">
+                        {groupFixture.matches.length} matches total
+                      </span>
                     </h3>
-                    <p className="text-sky-100 text-sm mt-1">
-                      {groupFixture.matches.length} matches total
-                    </p>
                   </div>
 
                   <div className="bg-sky-50 rounded-b-lg p-6 border-2 border-sky-200 border-t-0">
@@ -441,13 +535,13 @@ export default function TeamLot() {
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3 flex-1">
                                   <div className="bg-sky-100 px-4 py-2 rounded-lg font-bold text-sky-900 flex-1 text-center">
-                                    Team {match.team1}
+                                    {match.team1.team_name}
                                   </div>
                                   <div className="text-sky-400 font-bold">
                                     vs
                                   </div>
                                   <div className="bg-blue-100 px-4 py-2 rounded-lg font-bold text-blue-900 flex-1 text-center">
-                                    Team {match.team2}
+                                    {match.team2.team_name}
                                   </div>
                                 </div>
                               </div>

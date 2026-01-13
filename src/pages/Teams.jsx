@@ -142,7 +142,7 @@ const Teams = () => {
   };
 
   const handleDeletePlayer = (player) => {
-    console.log("player");
+    console.log("delete this player");
     console.log(player);
     toast(
       (t) => (
@@ -189,7 +189,6 @@ const Teams = () => {
                   updateTeam(team.id, updatedTeam);
 
                   const playerData = {
-                    retained_team: null,
                     sold_to: null,
                     sold_team: null,
                     sold_price: null,

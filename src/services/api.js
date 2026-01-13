@@ -118,6 +118,8 @@ export const playersAPI = {
   },
 
   delete: async (player) => {
+    console.log("player");
+    console.log(player);
     const photoPath = player?.player_photo;
     console.log("photoPath");
     console.log(photoPath);
