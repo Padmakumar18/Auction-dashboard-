@@ -348,17 +348,28 @@ const Teams = () => {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Teams Management</h1>
-        {isAuthenticated && (
-          <Button onClick={() => handleOpenModal()}>
-            <Plus size={20} className="inline mr-2" />
-            Add Team
+      <div className="flex flex-wrap gap-4 justify-between items-center mb-8">
+        <h1 className="w-full sm:w-auto text-2xl sm:text-3xl font-bold text-gray-900">
+          Teams Management
+        </h1>
+        <div className="flex flex-wrap gap-3 w-full sm:w-auto">
+          {isAuthenticated && (
+            <Button
+              onClick={() => handleOpenModal()}
+              className="w-full sm:w-auto"
+            >
+              <Plus size={20} className="inline mr-2" />
+              Add Team
+            </Button>
+          )}
+
+          <Button
+            onClick={() => navigate("/players")}
+            className="w-full sm:w-auto"
+          >
+            View Players
           </Button>
-        )}
-        {/* {isAuthenticated && ( */}
-        <Button onClick={() => navigate("/players")}>View Players</Button>
-        {/* )} */}
+        </div>
       </div>
 
       {/* Search Input */}
@@ -382,30 +393,32 @@ const Teams = () => {
 
             return (
               <Card key={team.id} className="mb-4">
-                <div className="flex justify-between items-start mb-4">
-                  <h3 className="text-xl font-bold text-gray-900">
+                <div className="flex flex-wrap gap-3 justify-between items-start mb-4">
+                  <h3 className="w-full sm:w-auto text-lg sm:text-xl font-bold text-gray-900">
                     {team.team_name}
                   </h3>
 
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                     <button
                       onClick={() => handleViewTeamDetails(team)}
-                      className="text-white bg-green-500 px-4 py-1 rounded text-md"
+                      className="w-full sm:w-auto text-white bg-green-500 px-4 py-2 rounded text-sm sm:text-md"
                       title="View Team Details"
                     >
                       Team Info
                     </button>
+
                     {isAuthenticated && (
                       <>
                         <button
                           onClick={() => handleOpenModal(team)}
-                          className="text-white bg-blue-500 px-4 rounded text-md"
+                          className="w-full sm:w-auto text-white bg-blue-500 px-4 py-2 rounded text-sm sm:text-md"
                         >
                           Edit
                         </button>
+
                         <button
                           onClick={() => handleDelete(team.id)}
-                          className="text-red-600 hover:text-red-800"
+                          className="w-full sm:w-auto flex justify-center text-red-600 hover:text-red-800 py-2"
                         >
                           <Trash2 size={20} />
                         </button>
@@ -535,7 +548,7 @@ const Teams = () => {
                   <td className="py-2 font-medium text-gray-600">
                     Recommended Max Points
                   </td>
-                  <td className="py-2 font-semibold text-green-700">
+                  <td className="py-2 font-semibold text-red-700">
                     {formatCurrency(
                       calculateRecommendedBid(selectedTeamDetails)
                     )}
@@ -569,8 +582,7 @@ const Teams = () => {
                   </td>
                 </tr>
 
-                {/* {selectedTeamDetails.retain_player && ( */}
-                <tr>
+                {/* <tr>
                   <td className="py-2 font-medium text-gray-600">
                     Retained Player
                   </td>
@@ -578,10 +590,9 @@ const Teams = () => {
                     {players.filter(
                       (t) => t.id === selectedTeamDetails.retain_player
                     ).name ?? "-"}
-                    {/* const team = teams.find((t) => t.id === selectedTeam); */}
+                    
                   </td>
-                </tr>
-                {/* )} */}
+                </tr> */}
               </tbody>
             </table>
           </div>

@@ -54,7 +54,7 @@ const Players = () => {
   const [soldPlayersCount, setSoldPlayersCount] = useState(0);
   const [availablePlayersCount, setAvailablePlayersCount] = useState(0);
 
-  const roles = ["Batsman", "Bowler", "All-Rounder", "Wicket-Keeper"];
+  const roles = ["Batsman", "Bowler", "AllRounder", "Wicket-Keeper"];
 
   useEffect(() => {
     loadData();
@@ -146,18 +146,24 @@ const Players = () => {
   const retainedTeam = (team) => {
     console.log("team");
     console.log(team);
+
     if (team.retained_playres_count === team.max_retain_players) {
       toast.error("Maximum Retain players reached");
-      setFormData({ retainedBy: "" });
+
+      setFormData((prev) => ({
+        ...prev,
+        retainedBy: "",
+      }));
+
       return;
     }
+
     if (!isAlreadyRetained && team.players_count === team.max_players) {
       toast.error("Maximum players reached");
-      setFormData({ retainedBy: "" });
       return;
     }
+
     setSlectedTeam(team);
-    // setFormData({ retainedBy: "" });
   };
 
   const handleOpenModal = (player = null) => {
@@ -626,16 +632,17 @@ const Players = () => {
                 (team) => team.id === selectedTeamId
               );
 
-              setFormData({
-                ...formData,
+              setFormData((prev) => ({
+                ...prev,
                 retainedBy: selectedTeamId,
-              });
+              }));
 
               retainedTeam(selectedTeam);
             }}
-            options={teams.map((r) => ({
-              value: r.id,
-              label: r.team_name,
+            options={teams.map((team) => ({
+              value: team.id,
+              label: team.team_name,
+              disabled: team.retained_playres_count === team.max_retain_players,
             }))}
             placeholder="Select team"
           />
