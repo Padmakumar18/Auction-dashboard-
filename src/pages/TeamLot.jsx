@@ -465,21 +465,20 @@ export default function TeamLot() {
                 onClick={() =>
                   exportSectionAsImage(groupsRef, "current-groups.png")
                 }
-                className="bg-sky-600 text-white px-5 py-2 rounded-lg 
+                className="ml-auto bg-sky-600 text-white px-5 py-2 rounded-lg 
   font-semibold hover:bg-sky-700 transition"
               >
                 Export Groups as Image
               </button>
-
-              <h2 className="text-2xl font-semibold text-sky-800">
-                Final Groups
-              </h2>
             </div>
 
             <div
               ref={groupsRef}
               className="bg-sky-50 p-8 rounded-xl space-y-12"
             >
+              <h2 className="text-2xl text-center font-semibold text-sky-800">
+                Final Groups
+              </h2>
               <div className="space-y-6 mb-6">
                 {groups.map((group, idx) => (
                   <div
@@ -527,39 +526,39 @@ export default function TeamLot() {
         {step === 4 && (
           <div className="space-y-6">
             <div className="bg-white rounded-lg shadow-lg p-8 border border-sky-100">
+              {/* Top Action Bar */}
               <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-4 mb-6">
-                  <button
-                    onClick={() => setStep(3)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg 
-               border border-sky-300 text-sky-700 
-               font-semibold hover:bg-sky-50 transition"
-                  >
-                    <ArrowLeft size={18} />
-                    Back
-                  </button>
+                <button
+                  onClick={() => setStep(3)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg 
+          border border-sky-300 text-sky-700 
+          font-semibold hover:bg-sky-50 transition"
+                >
+                  <ArrowLeft size={18} />
+                  Back
+                </button>
 
-                  <button
-                    onClick={() =>
-                      exportSectionAsImage(fixturesRef, "group-fixtures.png")
-                    }
-                    className="bg-sky-600 text-white px-5 py-2 rounded-lg 
-  font-semibold hover:bg-sky-700 transition"
-                  >
-                    Export Fixtures as Image
-                  </button>
-
-                  <h2 className="text-2xl font-semibold text-sky-800 flex items-center gap-2">
-                    <Calendar className="text-sky-600" size={28} />
-                    Match Fixtures - Round Robin
-                  </h2>
-                </div>
+                <button
+                  onClick={() =>
+                    exportSectionAsImage(fixturesRef, "group-fixtures.png")
+                  }
+                  className="bg-sky-600 text-white px-5 py-2 rounded-lg 
+          font-semibold hover:bg-sky-700 transition"
+                >
+                  Export Fixtures as Image
+                </button>
               </div>
 
+              {/* Exportable Section */}
               <div
                 ref={fixturesRef}
                 className="bg-sky-50 p-8 rounded-xl space-y-12"
               >
+                <h2 className="text-2xl font-semibold text-sky-800 flex items-center justify-center gap-2 text-center">
+                  <Calendar className="text-sky-600" size={28} />
+                  Match Fixtures - Round Robin
+                </h2>
+
                 {fixtures.map((groupFixture) => (
                   <div
                     key={groupFixture.groupNumber}
@@ -584,24 +583,19 @@ export default function TeamLot() {
                             key={match.matchNumber}
                             className="bg-white rounded-lg p-4 shadow-sm border border-sky-100 hover:shadow-md transition"
                           >
-                            <div className="flex items-center justify-between">
-                              <div className="flex-1">
-                                <div className="text-xs text-sky-600 font-semibold mb-2">
-                                  Match {match.matchNumber}
-                                </div>
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-3 flex-1">
-                                    <div className="bg-sky-100 px-4 py-2 rounded-lg font-bold text-sky-900 flex-1 text-center">
-                                      {match.team1.team_name}
-                                    </div>
-                                    <div className="text-sky-400 font-bold">
-                                      vs
-                                    </div>
-                                    <div className="bg-blue-100 px-4 py-2 rounded-lg font-bold text-blue-900 flex-1 text-center">
-                                      {match.team2.team_name}
-                                    </div>
-                                  </div>
-                                </div>
+                            <div className="text-xs text-sky-600 font-semibold mb-2">
+                              Match {match.matchNumber}
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                              <div className="bg-sky-100 px-4 py-2 rounded-lg font-bold text-sky-900 flex-1 text-center">
+                                {match.team1.team_name}
+                              </div>
+
+                              <span className="text-sky-400 font-bold">vs</span>
+
+                              <div className="bg-blue-100 px-4 py-2 rounded-lg font-bold text-blue-900 flex-1 text-center">
+                                {match.team2.team_name}
                               </div>
                             </div>
                           </div>
@@ -611,10 +605,12 @@ export default function TeamLot() {
                   </div>
                 ))}
 
+                {/* Tournament Summary */}
                 <div className="bg-white rounded-lg shadow-lg p-6 border border-sky-100">
                   <h3 className="text-xl font-semibold mb-4 text-sky-800">
                     Tournament Summary
                   </h3>
+
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="bg-sky-50 p-4 rounded-lg border border-sky-100 text-center">
                       <div className="text-2xl font-bold text-sky-600">
@@ -622,12 +618,14 @@ export default function TeamLot() {
                       </div>
                       <div className="text-sm text-sky-700">Groups</div>
                     </div>
+
                     <div className="bg-sky-50 p-4 rounded-lg border border-sky-100 text-center">
                       <div className="text-2xl font-bold text-sky-600">
                         {totalTeams}
                       </div>
                       <div className="text-sm text-sky-700">Teams</div>
                     </div>
+
                     <div className="bg-sky-50 p-4 rounded-lg border border-sky-100 text-center">
                       <div className="text-2xl font-bold text-sky-600">
                         {fixtures.reduce(
@@ -637,17 +635,19 @@ export default function TeamLot() {
                       </div>
                       <div className="text-sm text-sky-700">Total Matches</div>
                     </div>
+
                     <div className="bg-sky-50 p-4 rounded-lg border border-sky-100 text-center">
                       <div className="text-2xl font-bold text-sky-600">
                         {parseInt(teamsPerGroup)}
                       </div>
-                      <div className="text-sm text-sky-700">Teams/Group</div>
+                      <div className="text-sm text-sky-700">Teams / Group</div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
 
+            {/* Reset */}
             <button
               onClick={reset}
               className="w-full bg-sky-600 text-white py-3 rounded-lg font-semibold hover:bg-sky-700 transition"
