@@ -13,6 +13,8 @@ import {
   validateTeam,
   calculateRecommendedBid,
 } from "../utils/helpers";
+import { toPng } from "html-to-image";
+import { useRef } from "react";
 
 import { useNavigate } from "react-router-dom";
 
@@ -26,6 +28,9 @@ const Teams = () => {
     updateTeam,
     isAuthenticated,
   } = useStore();
+
+  const teamPlayerRef = useRef(null);
+
   const [helper, setHelper] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -65,6 +70,26 @@ const Teams = () => {
   const filteredTeams = teams.filter((team) =>
     team.team_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const exportSectionAsImage = async (ref, fileName) => {
+    if (!ref?.current) return;
+
+    try {
+      const dataUrl = await toPng(ref.current, {
+        quality: 1,
+        pixelRatio: 6,
+        backgroundColor: "#f0f9ff",
+        cacheBust: true,
+      });
+
+      const link = document.createElement("a");
+      link.download = fileName;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error("Image export failed", err);
+    }
+  };
 
   const loadTeams = async () => {
     try {
@@ -644,51 +669,66 @@ const Teams = () => {
       <Modal
         isOpen={isPlayersModalOpen}
         onClose={closePlayersModal}
-        title={`Players - ${selectedTeamName.team_name}`}
+        title={`Players List`}
       >
-        {selectedTeamPlayers && selectedTeamPlayers.length !== 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {selectedTeamPlayers.map((player) => (
-              <div
-                key={player.id}
-                className="relative border rounded-lg p-3 shadow-sm bg-white"
-              >
-                {/* Delete Icon */}
-                {isAuthenticated && (
-                  <button
-                    onClick={() => handleDeletePlayer(player)}
-                    className="absolute top-2 right-2 text-red-400 hover:text-red-600 transition"
-                    title="Delete Player"
-                  >
-                    <Trash2 size={20} />
-                  </button>
-                )}
+        <button
+          onClick={() =>
+            exportSectionAsImage(teamPlayerRef, "current-groups.png")
+          }
+          className="bg-green-600 text-white mb-4 px-5 py-2 rounded-lg 
+  font-semibold hover:bg-sky-700 transition"
+        >
+          Export Team Players as Image
+        </button>
+        <div ref={teamPlayerRef} className=" p-2 ">
+          {/* <div> */}
+          <h2 className="text-center text-2xl font-bold text-gray-900 mb-4">{`Players - ${selectedTeamName.team_name}`}</h2>
+          {/* </div> */}
 
-                <div className="w-40 h-40 mb-4 rounded-lg overflow-hidden border bg-gray-100 flex items-center justify-center">
-                  <img
-                    src={player.player_photo}
-                    alt={player.name}
-                    className="w-full h-full object-contain"
-                  />
+          {selectedTeamPlayers && selectedTeamPlayers.length !== 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {selectedTeamPlayers.map((player) => (
+                <div
+                  key={player.id}
+                  className="relative border rounded-lg p-3 shadow-sm bg-white"
+                >
+                  {/* Delete Icon */}
+                  {isAuthenticated && (
+                    <button
+                      onClick={() => handleDeletePlayer(player)}
+                      className="absolute top-2 right-2 text-red-400 hover:text-red-600 transition"
+                      title="Delete Player"
+                    >
+                      <Trash2 size={20} />
+                    </button>
+                  )}
+
+                  <div className="w-40 h-40 mb-4 rounded-lg overflow-hidden border bg-gray-100 flex items-center justify-center">
+                    <img
+                      src={player.player_photo}
+                      alt={player.name}
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                  {selectedTeamName?.id === player.retained_team && (
+                    <p className="font-bold text-red-600 mb-2">Retain Player</p>
+                  )}
+
+                  <p className="font-bold text-gray-900">{player.name}</p>
+                  <p className="text-sm text-gray-600">Role: {player.role}</p>
+                  <p className="text-sm font-semibold text-blue-700">
+                    Base Price: {formatCurrency(player.base_price)}
+                  </p>
+                  <p className="text-sm font-semibold text-green-700">
+                    Sold Price: {formatCurrency(player.sold_price)}
+                  </p>
                 </div>
-                {selectedTeamName?.id === player.retained_team && (
-                  <p className="font-bold text-red-600 mb-2">Retain Player</p>
-                )}
-
-                <p className="font-bold text-gray-900">{player.name}</p>
-                <p className="text-sm text-gray-600">Role: {player.role}</p>
-                <p className="text-sm font-semibold text-blue-700">
-                  Base Price: {formatCurrency(player.base_price)}
-                </p>
-                <p className="text-sm font-semibold text-green-700">
-                  Sold Price: {formatCurrency(player.sold_price)}
-                </p>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center">No players</div>
-        )}
+              ))}
+            </div>
+          ) : (
+            <div className="text-center">No players</div>
+          )}
+        </div>
       </Modal>
     </div>
   );
