@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import useStore from "../store/useStore";
 import { Shuffle, X, Calendar, Users, ArrowLeft } from "lucide-react";
+import { toPng } from "html-to-image";
+import { useRef } from "react";
 
 export default function TeamLot() {
   const {
@@ -12,6 +14,9 @@ export default function TeamLot() {
     updatePlayer,
     isAuthenticated,
   } = useStore();
+  const fixturesRef = useRef(null);
+  const groupsRef = useRef(null);
+
   const totalTeams = teams.length;
   const [step, setStep] = useState(1);
   const [numGroups, setNumGroups] = useState("");
@@ -39,6 +44,26 @@ export default function TeamLot() {
     }
 
     return matches;
+  };
+
+  const exportSectionAsImage = async (ref, fileName) => {
+    if (!ref?.current) return;
+
+    try {
+      const dataUrl = await toPng(ref.current, {
+        quality: 1,
+        pixelRatio: 6,
+        backgroundColor: "#f0f9ff",
+        cacheBust: true,
+      });
+
+      const link = document.createElement("a");
+      link.download = fileName;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error("Image export failed", err);
+    }
   };
 
   // Generate fixtures for all groups
@@ -71,7 +96,7 @@ export default function TeamLot() {
   // Calculate possible group configurations
   const getGroupOptions = () => {
     const options = [];
-    for (let i = 1; i <= totalTeams; i++) {
+    for (let i = 1; i < totalTeams; i++) {
       if (totalTeams % i === 0) {
         options.push({
           groups: i,
@@ -436,40 +461,55 @@ export default function TeamLot() {
                 Back
               </button>
 
+              <button
+                onClick={() =>
+                  exportSectionAsImage(groupsRef, "current-groups.png")
+                }
+                className="bg-sky-600 text-white px-5 py-2 rounded-lg 
+  font-semibold hover:bg-sky-700 transition"
+              >
+                Export Groups as Image
+              </button>
+
               <h2 className="text-2xl font-semibold text-sky-800">
                 Final Groups
               </h2>
             </div>
 
-            <div className="space-y-6 mb-6">
-              {groups.map((group, idx) => (
-                <div
-                  key={idx}
-                  className="bg-gradient-to-br from-sky-50 to-white 
+            <div
+              ref={groupsRef}
+              className="bg-sky-50 p-8 rounded-xl space-y-12"
+            >
+              <div className="space-y-6 mb-6">
+                {groups.map((group, idx) => (
+                  <div
+                    key={idx}
+                    className="bg-gradient-to-br from-sky-50 to-white 
                  rounded-lg p-6 border-2 border-sky-200"
-                >
-                  {/* Group Header */}
-                  <h3 className="text-xl font-bold text-sky-800 mb-4">
-                    Group {idx + 1}
-                  </h3>
+                  >
+                    {/* Group Header */}
+                    <h3 className="text-xl font-bold text-sky-800 mb-4">
+                      Group {idx + 1}
+                    </h3>
 
-                  {/* Teams in Horizontal Grid */}
-                  <div className="grid grid-flow-col auto-cols-fr gap-4">
-                    {group.map((team, teamIdx) => (
-                      <div
-                        key={teamIdx}
-                        className="bg-white px-4 py-3 rounded-lg shadow-sm 
+                    {/* Teams in Horizontal Grid */}
+                    <div className="grid grid-flow-col auto-cols-fr gap-4">
+                      {group.map((team, teamIdx) => (
+                        <div
+                          key={teamIdx}
+                          className="bg-white px-4 py-3 rounded-lg shadow-sm 
                        font-semibold text-sky-900 
                        border border-sky-100 
                        flex items-center justify-between 
                        hover:border-sky-300 transition"
-                      >
-                        <span>{team.team_name}</span>
-                      </div>
-                    ))}
+                        >
+                          <span>{team.team_name}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
 
             <div className="flex gap-4">
@@ -499,6 +539,16 @@ export default function TeamLot() {
                     Back
                   </button>
 
+                  <button
+                    onClick={() =>
+                      exportSectionAsImage(fixturesRef, "group-fixtures.png")
+                    }
+                    className="bg-sky-600 text-white px-5 py-2 rounded-lg 
+  font-semibold hover:bg-sky-700 transition"
+                  >
+                    Export Fixtures as Image
+                  </button>
+
                   <h2 className="text-2xl font-semibold text-sky-800 flex items-center gap-2">
                     <Calendar className="text-sky-600" size={28} />
                     Match Fixtures - Round Robin
@@ -506,83 +556,94 @@ export default function TeamLot() {
                 </div>
               </div>
 
-              {fixtures.map((groupFixture) => (
-                <div key={groupFixture.groupNumber} className="mb-8 last:mb-0">
-                  <div className="bg-gradient-to-r from-sky-600 to-blue-600 text-white px-6 py-3 rounded-t-lg">
-                    <h3 className="text-xl font-bold flex items-center justify-between">
-                      <span className="flex items-center gap-2">
-                        <Users size={20} />
-                        Group {groupFixture.groupNumber} Fixtures
-                      </span>
-                      <span className="text-sky-100 text-sm">
-                        {groupFixture.matches.length} matches total
-                      </span>
-                    </h3>
-                  </div>
+              <div
+                ref={fixturesRef}
+                className="bg-sky-50 p-8 rounded-xl space-y-12"
+              >
+                {fixtures.map((groupFixture) => (
+                  <div
+                    key={groupFixture.groupNumber}
+                    className="mb-8 last:mb-0"
+                  >
+                    <div className="bg-gradient-to-r from-sky-600 to-blue-600 text-white px-6 py-3 rounded-t-lg">
+                      <h3 className="text-xl font-bold flex items-center justify-between">
+                        <span className="flex items-center gap-2">
+                          <Users size={20} />
+                          Group {groupFixture.groupNumber} Fixtures
+                        </span>
+                        <span className="text-sky-100 text-sm">
+                          {groupFixture.matches.length} matches total
+                        </span>
+                      </h3>
+                    </div>
 
-                  <div className="bg-sky-50 rounded-b-lg p-6 border-2 border-sky-200 border-t-0">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {groupFixture.matches.map((match) => (
-                        <div
-                          key={match.matchNumber}
-                          className="bg-white rounded-lg p-4 shadow-sm border border-sky-100 hover:shadow-md transition"
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1">
-                              <div className="text-xs text-sky-600 font-semibold mb-2">
-                                Match {match.matchNumber}
-                              </div>
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3 flex-1">
-                                  <div className="bg-sky-100 px-4 py-2 rounded-lg font-bold text-sky-900 flex-1 text-center">
-                                    {match.team1.team_name}
-                                  </div>
-                                  <div className="text-sky-400 font-bold">
-                                    vs
-                                  </div>
-                                  <div className="bg-blue-100 px-4 py-2 rounded-lg font-bold text-blue-900 flex-1 text-center">
-                                    {match.team2.team_name}
+                    <div className="bg-sky-50 rounded-b-lg p-6 border-2 border-sky-200 border-t-0">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {groupFixture.matches.map((match) => (
+                          <div
+                            key={match.matchNumber}
+                            className="bg-white rounded-lg p-4 shadow-sm border border-sky-100 hover:shadow-md transition"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <div className="text-xs text-sky-600 font-semibold mb-2">
+                                  Match {match.matchNumber}
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-3 flex-1">
+                                    <div className="bg-sky-100 px-4 py-2 rounded-lg font-bold text-sky-900 flex-1 text-center">
+                                      {match.team1.team_name}
+                                    </div>
+                                    <div className="text-sky-400 font-bold">
+                                      vs
+                                    </div>
+                                    <div className="bg-blue-100 px-4 py-2 rounded-lg font-bold text-blue-900 flex-1 text-center">
+                                      {match.team2.team_name}
+                                    </div>
                                   </div>
                                 </div>
                               </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
 
-            <div className="bg-white rounded-lg shadow-lg p-6 border border-sky-100">
-              <h3 className="text-xl font-semibold mb-4 text-sky-800">
-                Tournament Summary
-              </h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-sky-50 p-4 rounded-lg border border-sky-100 text-center">
-                  <div className="text-2xl font-bold text-sky-600">
-                    {groups.length}
+                <div className="bg-white rounded-lg shadow-lg p-6 border border-sky-100">
+                  <h3 className="text-xl font-semibold mb-4 text-sky-800">
+                    Tournament Summary
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="bg-sky-50 p-4 rounded-lg border border-sky-100 text-center">
+                      <div className="text-2xl font-bold text-sky-600">
+                        {groups.length}
+                      </div>
+                      <div className="text-sm text-sky-700">Groups</div>
+                    </div>
+                    <div className="bg-sky-50 p-4 rounded-lg border border-sky-100 text-center">
+                      <div className="text-2xl font-bold text-sky-600">
+                        {totalTeams}
+                      </div>
+                      <div className="text-sm text-sky-700">Teams</div>
+                    </div>
+                    <div className="bg-sky-50 p-4 rounded-lg border border-sky-100 text-center">
+                      <div className="text-2xl font-bold text-sky-600">
+                        {fixtures.reduce(
+                          (sum, gf) => sum + gf.matches.length,
+                          0
+                        )}
+                      </div>
+                      <div className="text-sm text-sky-700">Total Matches</div>
+                    </div>
+                    <div className="bg-sky-50 p-4 rounded-lg border border-sky-100 text-center">
+                      <div className="text-2xl font-bold text-sky-600">
+                        {parseInt(teamsPerGroup)}
+                      </div>
+                      <div className="text-sm text-sky-700">Teams/Group</div>
+                    </div>
                   </div>
-                  <div className="text-sm text-sky-700">Groups</div>
-                </div>
-                <div className="bg-sky-50 p-4 rounded-lg border border-sky-100 text-center">
-                  <div className="text-2xl font-bold text-sky-600">
-                    {totalTeams}
-                  </div>
-                  <div className="text-sm text-sky-700">Teams</div>
-                </div>
-                <div className="bg-sky-50 p-4 rounded-lg border border-sky-100 text-center">
-                  <div className="text-2xl font-bold text-sky-600">
-                    {fixtures.reduce((sum, gf) => sum + gf.matches.length, 0)}
-                  </div>
-                  <div className="text-sm text-sky-700">Total Matches</div>
-                </div>
-                <div className="bg-sky-50 p-4 rounded-lg border border-sky-100 text-center">
-                  <div className="text-2xl font-bold text-sky-600">
-                    {parseInt(teamsPerGroup)}
-                  </div>
-                  <div className="text-sm text-sky-700">Teams/Group</div>
                 </div>
               </div>
             </div>
