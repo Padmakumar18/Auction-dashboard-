@@ -39,10 +39,36 @@ const Auction = () => {
   const [shuffling, setShuffling] = useState(false);
   const [shuffleDisplay, setShuffleDisplay] = useState(null);
 
+  const [unsoldPlayersCount, setUnsoldPlayersCount] = useState(0);
+  const [soldPlayersCount, setSoldPlayersCount] = useState(0);
+  const [availablePlayersCount, setAvailablePlayersCount] = useState(0);
+
   const [helper, setHelper] = useState([]);
 
   const [bidAmount, setBidAmount] = useState("");
   const [selectedTeam, setSelectedTeam] = useState("");
+
+  useEffect(() => {
+    const unsoldPlayersCount = players
+      ? players.filter((p) => p.status === "unsold")
+      : 0;
+
+    setUnsoldPlayersCount(unsoldPlayersCount ? unsoldPlayersCount.length : 0);
+
+    const soldPlayersCount = players
+      ? players.filter((p) => p.status === "sold")
+      : 0;
+
+    setSoldPlayersCount(soldPlayersCount ? soldPlayersCount.length : 0);
+
+    const availablePlayersCount = players
+      ? players.filter((p) => p.status === "available")
+      : 0;
+
+    setAvailablePlayersCount(
+      availablePlayersCount ? availablePlayersCount.length : 0
+    );
+  }, [players]);
 
   useEffect(() => {
     loadData();
@@ -325,20 +351,57 @@ const Auction = () => {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Live Auction</h1>
-          <p className="text-gray-600 mt-1">
-            {remainingPlayers} players remaining
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-3">
+        <div className="bg-white p-4 rounded-lg shadow-md">
+          <p className="text-sm text-gray-600 mb-1">Total Players</p>
+          <p className="text-2xl font-bold text-gray-900">
+            {players ? players.length : 0}
           </p>
         </div>
-        <Button
-          onClick={handleShufflePlayer}
-          disabled={shuffling || remainingPlayers === 0}
-        >
-          <Shuffle size={20} className="inline mr-2" />
-          {shuffling ? "Shuffling..." : "Pick Random Player"}
-        </Button>
+        <div className="bg-white p-4 rounded-lg shadow-md">
+          <p className="text-sm text-gray-600 mb-1">Available</p>
+          <p className="text-2xl font-bold text-blue-600">
+            {availablePlayersCount}
+          </p>
+        </div>
+        <div className="bg-white p-4 rounded-lg shadow-md">
+          <p className="text-sm text-gray-600 mb-1">Sold</p>
+          <p className="text-2xl font-bold text-green-600">
+            {soldPlayersCount}
+          </p>
+        </div>
+        <div className="bg-white p-4 rounded-lg shadow-md">
+          <p className="text-sm text-gray-600 mb-1">Unsold</p>
+          <p className="text-2xl font-bold text-red-600">
+            {unsoldPlayersCount}
+          </p>
+        </div>
+        <div className="bg-white p-4 rounded-lg shadow-md flex items-center justify-center">
+          <Button
+            onClick={handleShufflePlayer}
+            disabled={shuffling || remainingPlayers === 0}
+            className="
+      w-full
+      flex items-center justify-center
+      gap-2
+      px-6 py-3
+      text-base font-semibold
+      text-white
+      bg-green-600
+      rounded-md
+      transition-all duration-200
+      hover:bg-green-700
+      hover:shadow-lg
+      focus:outline-none
+      focus:ring-2 focus:ring-green-400 focus:ring-offset-2
+      disabled:bg-green-300
+      disabled:cursor-not-allowed
+    "
+          >
+            <Shuffle size={20} />
+            {shuffling ? "Shuffling Player…" : "Pick Random Player"}
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -375,12 +438,12 @@ const Auction = () => {
                 <div className="flex flex-col lg:flex-row gap-8 mb-10">
                   {/* LEFT: Player Photo - Increased size */}
                   <div className="lg:w-2/5 flex justify-center lg:justify-start">
-                    <div className="bg-blue-100 w-full max-w-[500px] h-auto aspect-square rounded-3xl overflow-hidden flex items-center justify-center shadow-xl">
+                    <div className="bg-white w-full max-w-[500px] aspect-square rounded-3xl overflow-hidden flex items-center justify-center">
                       {currentPlayer.player_photo ? (
                         <img
                           src={currentPlayer.player_photo}
                           alt={currentPlayer.name}
-                          className="w-full h-full object-cover"
+                          className="max-w-full max-h-full object-contain rounded-3xl"
                           loading="lazy"
                         />
                       ) : (
@@ -538,22 +601,33 @@ const Auction = () => {
                         {formatCurrency(pointsLeft)}
                       </span>
                     </div>
-                    <div className="text-xs text-gray-600">
-                      <p>
+                    <div className="text-sm text-gray-700">
+                      <p className="mb-1">
                         Recommended max points :{" "}
-                        {formatCurrency(recommendedBid)}
+                        <span className="font-medium">
+                          {formatCurrency(recommendedBid)}
+                        </span>
                       </p>
-                      <p>Total players : {team.players_count}</p>
-                      <p>
-                        Balance players count : {team.balance_players_count}
+                      <p className="mb-1">
+                        Total players :{" "}
+                        <span className="font-medium">
+                          {team.players_count}
+                        </span>
+                      </p>
+                      <p className="mb-1">
+                        Balance players count :{" "}
+                        <span className="font-medium">
+                          {team.balance_players_count}
+                        </span>
                       </p>
                       <p>
                         Points used :{" "}
-                        {new Intl.NumberFormat("en-IN").format(
-                          team.points_used
-                        )}
+                        <span className="font-medium">
+                          {formatCurrency(team.points_used)}
+                        </span>
                       </p>
                     </div>
+
                     <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
                       <div
                         className="bg-blue-600 h-1.5 rounded-full"
