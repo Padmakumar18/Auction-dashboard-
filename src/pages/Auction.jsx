@@ -344,6 +344,20 @@ const Auction = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <Card className="h-full">
+            {currentBid && (
+              <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-4 mb-8">
+                <p className="text-center text-lg">
+                  <span className="font-semibold">Current Bid: </span>
+                  <span className="text-2xl font-bold text-yellow-700">
+                    {formatCurrency(currentBid.amount)}
+                  </span>
+                  <span className="text-gray-600 ml-2">
+                    by{" "}
+                    {teams.find((t) => t.id === currentBid.team_id)?.team_name}
+                  </span>
+                </p>
+              </div>
+            )}
             {shuffling ? (
               <div className="text-center py-12">
                 <div className="animate-pulse">
@@ -356,187 +370,140 @@ const Auction = () => {
                 </div>
               </div>
             ) : currentPlayer ? (
-              <div>
-                <div className="flex flex-col md:flex-row items-center md:items-start gap-10 mb-10">
-                  {/* <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-10"> */}
-                  {/* LEFT: Player Photo */}
-                  <div className="flex justify-start">
-                    <div className="bg-blue-100 w-96 h-96 rounded-3xl overflow-hidden flex items-center justify-center shadow-xl">
+              <div className="p-6">
+                {/* Main player info row */}
+                <div className="flex flex-col lg:flex-row gap-8 mb-10">
+                  {/* LEFT: Player Photo - Increased size */}
+                  <div className="lg:w-2/5 flex justify-center lg:justify-start">
+                    <div className="bg-blue-100 w-full max-w-[500px] h-auto aspect-square rounded-3xl overflow-hidden flex items-center justify-center shadow-xl">
                       {currentPlayer.player_photo ? (
                         <img
                           src={currentPlayer.player_photo}
                           alt={currentPlayer.name}
-                          className="w-full h-full object-contain"
+                          className="w-full h-full object-cover"
                           loading="lazy"
                         />
                       ) : (
-                        <span className="text-8xl font-bold text-blue-600">
+                        <span className="text-9xl font-bold text-blue-600">
                           {currentPlayer.name.charAt(0)}
                         </span>
                       )}
                     </div>
                   </div>
 
-                  {/* RIGHT: Player Details */}
-                  <div className="flex-1">
-                    <h2 className="text-5xl font-bold text-gray-900 mb-3">
-                      {currentPlayer.name}
-                    </h2>
-
-                    <p className="text-2xl text-gray-600 mb-6">
-                      {currentPlayer.role}
-                    </p>
-
-                    <span className="text-lg text-gray-600">Base Price: </span>
-                    <span className="text-2xl font-bold text-green-700">
-                      {formatCurrency(currentPlayer.base_price)}
-                    </span>
-
-                    <div className="space-y-3 text-gray-700 text-lg">
-                      {/* {currentPlayer.age && (
-                        <p>
-                          <span className="font-semibold">Age:</span>{" "}
-                          {currentPlayer.age}
-                        </p>
-                      )}
-
-                      {currentPlayer.country && (
-                        <p>
-                          <span className="font-semibold">Country:</span>{" "}
-                          {currentPlayer.country}
-                        </p>
-                      )}
-
-                      {currentPlayer.batting_style && (
-                        <p>
-                          <span className="font-semibold">Batting Style:</span>{" "}
-                          {currentPlayer.batting_style}
-                        </p>
-                      )}
-
-                      {currentPlayer.bowling_style && (
-                        <p>
-                          <span className="font-semibold">Bowling Style:</span>{" "}
-                          {currentPlayer.bowling_style}
-                        </p>
-                      )} */}
-
-                      {/* <div className="mt-4">
+                  {/* RIGHT: Player Details and Team Selection */}
+                  <div className="lg:w-3/5">
+                    {/* Player Info */}
+                    <div className="mb-8">
+                      <h2 className="text-5xl font-bold text-gray-900 mb-3">
+                        {currentPlayer.name}
+                      </h2>
+                      <p className="text-2xl text-gray-600 mb-4">
+                        {currentPlayer.role}
+                      </p>
+                      <div>
                         <span className="text-lg text-gray-600">
                           Base Price:{" "}
                         </span>
-                        <span className="text-2xl font-bold text-green-700">
+                        <span className="text-3xl font-bold text-green-700">
                           {formatCurrency(currentPlayer.base_price)}
                         </span>
-                      </div> */}
+                      </div>
                     </div>
-                  </div>
-                </div>
 
-                {currentBid && (
-                  <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-4 mb-6">
-                    <p className="text-center text-lg">
-                      <span className="font-semibold">Current Bid: </span>
-                      <span className="text-2xl font-bold text-yellow-700">
-                        {formatCurrency(currentBid.amount)}
-                      </span>
-                      <span className="text-gray-600 ml-2">
-                        by{" "}
-                        {
-                          teams.find((t) => t.id === currentBid.team_id)
-                            ?.team_name
-                        }
-                      </span>
-                    </p>
-                  </div>
-                )}
+                    {/* Current Bid Display */}
 
-                <div className="space-y-4">
-                  {/* Team Radio Buttons */}
-                  <div>
-                    <p className="text-sm font-semibold text-gray-700 mb-2">
-                      Select Team
-                    </p>
+                    {/* Team Selection and Bidding */}
+                    <div className="space-y-6">
+                      {/* Team Radio Buttons */}
+                      <div>
+                        <p className="text-sm font-semibold text-gray-700 mb-3">
+                          Select Team
+                        </p>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                          {teams.map((team) => {
+                            const pointsLeft =
+                              team.total_points - team.points_used;
+                            const isSelected = selectedTeam === team.id;
 
-                    <div className="flex flex-wrap gap-3">
-                      {teams.map((team) => {
-                        const pointsLeft = team.total_points - team.points_used;
-                        const isSelected = selectedTeam === team.id;
+                            return (
+                              <label
+                                key={team.id}
+                                className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition
+                                ${
+                                  isSelected
+                                    ? "border-blue-600 bg-blue-50"
+                                    : "border-gray-300 hover:bg-gray-100"
+                                }`}
+                              >
+                                <input
+                                  type="radio"
+                                  name="team"
+                                  value={team.id}
+                                  checked={isSelected}
+                                  onChange={() => setSelectedTeam(team.id)}
+                                  disabled={
+                                    isAuctionLocked ||
+                                    team.players_count === team.max_players
+                                  }
+                                  className="w-5 h-5 text-blue-600 focus:ring-blue-500"
+                                />
+                                <div>
+                                  <p className="font-semibold text-gray-900">
+                                    {team.team_name}
+                                  </p>
+                                  <p className="text-sm text-green-700 font-medium">
+                                    {formatCurrency(pointsLeft)} left
+                                  </p>
+                                </div>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
 
-                        return (
-                          <label
-                            key={team.id}
-                            className={`flex items-center gap-2 px-4 py-2 border rounded-lg cursor-pointer transition
-                            ${
-                              isSelected
-                                ? "border-blue-600 bg-blue-50"
-                                : "border-gray-300 hover:bg-gray-100"
-                            }`}
+                      {/* Bid Input and Buttons */}
+                      <div className="space-y-4">
+                        <input
+                          type="number"
+                          value={bidAmount}
+                          onChange={(e) => setBidAmount(e.target.value)}
+                          placeholder="Enter bid amount"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          disabled={isAuctionLocked}
+                        />
+
+                        <div className="flex gap-3">
+                          <Button
+                            onClick={handlePlaceBid}
+                            className="flex-1"
+                            disabled={isAuctionLocked}
                           >
-                            <input
-                              type="radio"
-                              name="team"
-                              value={team.id}
-                              checked={isSelected}
-                              onChange={() => setSelectedTeam(team.id)}
-                              disabled={
-                                isAuctionLocked ||
-                                team.players_count === team.max_players
-                              }
-                              className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                            />
+                            <Gavel size={20} className="inline mr-2" />
+                            Place Bid
+                          </Button>
 
-                            <div>
-                              <p className="font-semibold text-gray-900 text-sm">
-                                {team.team_name}
-                              </p>
-                              <p className="text-xs text-green-700 font-medium">
-                                {formatCurrency(pointsLeft)} left
-                              </p>
-                            </div>
-                          </label>
-                        );
-                      })}
+                          <Button
+                            onClick={handleFinalizeSale}
+                            variant="secondary"
+                            className="flex-1"
+                            disabled={!currentBid || isAuctionLocked}
+                          >
+                            <Check size={20} className="inline mr-2" />
+                            Finalize Sale
+                          </Button>
+
+                          <Button
+                            onClick={handleMarkUnsold}
+                            variant="danger"
+                            disabled={isAuctionLocked}
+                          >
+                            <X size={20} className="inline mr-2" />
+                            Unsold
+                          </Button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-
-                  <input
-                    type="number"
-                    value={bidAmount}
-                    onChange={(e) => setBidAmount(e.target.value)}
-                    placeholder="Enter bid amount"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    disabled={isAuctionLocked}
-                  />
-
-                  <div className="flex gap-3">
-                    <Button
-                      onClick={handlePlaceBid}
-                      className="flex-1"
-                      disabled={isAuctionLocked}
-                    >
-                      <Gavel size={20} className="inline mr-2" />
-                      Place Bid
-                    </Button>
-
-                    <Button
-                      onClick={handleFinalizeSale}
-                      variant="secondary"
-                      className="flex-1"
-                      disabled={!currentBid || isAuctionLocked}
-                    >
-                      <Check size={20} className="inline mr-2" />
-                      Finalize Sale
-                    </Button>
-
-                    <Button
-                      onClick={handleMarkUnsold}
-                      variant="danger"
-                      disabled={isAuctionLocked}
-                    >
-                      <X size={20} className="inline mr-2" />
-                      Unsold
-                    </Button>
                   </div>
                 </div>
               </div>

@@ -22,7 +22,7 @@ const PlayerRegistration = () => {
     jersey_size: "",
     jersey_number: "",
     phone_number: "",
-    role: "",
+    role: "allrounder",
   });
 
   const [files, setFiles] = useState({
@@ -133,27 +133,27 @@ const PlayerRegistration = () => {
       newErrors.name = "Player name is required";
     }
 
-    if (!formData.phone_number || formData.phone_number.length != 10) {
-      newErrors.phone_number = "Enter valid phone number";
-    }
+    // if (!formData.phone_number || formData.phone_number.length != 10) {
+    //   newErrors.phone_number = "Enter valid phone number";
+    // }
 
-    if (!formData.location) {
-      newErrors.location = "Location is required";
-    }
+    // if (!formData.location) {
+    //   newErrors.location = "Location is required";
+    // }
 
-    if (!formData.jersey_size) {
-      newErrors.jersey_size = "Jersey size is required";
-    }
+    // if (!formData.jersey_size) {
+    //   newErrors.jersey_size = "Jersey size is required";
+    // }
 
-    if (!formData.jersey_number) {
-      newErrors.jersey_number = "Jersey number is required";
-    } else if (
-      isNaN(formData.jersey_number) ||
-      formData.jersey_number < 1 ||
-      formData.jersey_number > 99
-    ) {
-      newErrors.jersey_number = "Jersey number must be between 1 and 99";
-    }
+    // if (!formData.jersey_number) {
+    //   newErrors.jersey_number = "Jersey number is required";
+    // } else if (
+    //   isNaN(formData.jersey_number) ||
+    //   formData.jersey_number < 1 ||
+    //   formData.jersey_number > 99
+    // ) {
+    //   newErrors.jersey_number = "Jersey number must be between 1 and 99";
+    // }
 
     if (!formData.role) {
       newErrors.role = "Player role is required";
@@ -163,12 +163,12 @@ const PlayerRegistration = () => {
       newErrors.playerPhoto = "Player photo is required";
     }
 
-    if (!files.paymentProof) {
-      newErrors.paymentProof = "Payment proof is required";
-    }
-    if (!files.playerIdProof) {
-      newErrors.playerIdProof = "Payment id proof is required";
-    }
+    // if (!files.paymentProof) {
+    //   newErrors.paymentProof = "Payment proof is required";
+    // }
+    // if (!files.playerIdProof) {
+    //   newErrors.playerIdProof = "Payment id proof is required";
+    // }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -244,28 +244,35 @@ const PlayerRegistration = () => {
       );
 
       // Upload payment proof
-      const paymentProofPath = await uploadFile(
-        files.paymentProof,
-        "player-photos",
-        "payments/"
-      );
+      // const paymentProofPath = await uploadFile(
+      //   files.paymentProof,
+      //   "player-photos",
+      //   "payments/"
+      // );
 
-      const IdProofPath = await uploadFile(
-        files.playerIdProof,
-        "player-photos",
-        "player_id_proof/"
-      );
+      // const IdProofPath = await uploadFile(
+      //   files.playerIdProof,
+      //   "player-photos",
+      //   "player_id_proof/"
+      // );
 
       const playerData = {
-        name: formData.name.trim(),
-        phone_number: formData.phone_number,
+        name:
+          formData.name.trim().charAt(0).toUpperCase() +
+          formData.name.trim().slice(1).toLowerCase(),
+        // name: formData.name.trim(),
+        phone_number: formData.phone_number ?? null,
         player_location: formData.location,
-        pleyer_jersey_size: formData.jersey_size.toLocaleUpperCase(),
+        pleyer_jersey_size: formData.jersey_size
+          ? formData.jersey_size.toUpperCase()
+          : null,
         pleyer_jersey_number: formData.jersey_number,
         role: formData.role,
         player_photo: playerPhotoPath,
-        player_id_proof_photo: IdProofPath,
-        player_payment_proof_photo: paymentProofPath,
+        player_id_proof_photo: null,
+        // player_id_proof_photo: IdProofPath,
+        // player_payment_proof_photo: paymentProofPath,
+        player_payment_proof_photo: null,
         base_price: helper[0].base_price,
       };
 
@@ -301,7 +308,7 @@ const PlayerRegistration = () => {
       jersey_size: "",
       jersey_number: "",
       phone_number: "",
-      role: "",
+      role: "allrounder",
     });
     setFiles({ playerPhoto: null, paymentProof: null, playerIdProof: null });
     setPreviews({
@@ -352,25 +359,25 @@ const PlayerRegistration = () => {
                   value={formData.phone_number}
                   onChange={handleInputChange}
                   placeholder="+91 XXXXXXXXXX"
-                  required
+                  // required
                   error={errors.phone_number}
                 />
 
-                <Select
+                {/* <Select
                   label="Location"
                   name="location"
                   value={formData.location}
                   onChange={handleInputChange}
                   options={locations}
                   placeholder="Select your location"
-                  required
+                  // required
                   error={errors.location}
-                />
+                /> */}
               </div>
             </div>
 
             {/* Jersey Details Section */}
-            <div>
+            {/* <div>
               <h2 className="text-xl font-semibold text-gray-800 mb-4 pb-2 border-b">
                 Jersey Details
               </h2>
@@ -381,7 +388,7 @@ const PlayerRegistration = () => {
                   value={formData.jersey_size.toLocaleUpperCase()}
                   onChange={handleInputChange}
                   placeholder="Select jersey size"
-                  required
+                  // required
                   error={errors.jersey_size}
                 />
 
@@ -392,13 +399,11 @@ const PlayerRegistration = () => {
                   value={formData.jersey_number}
                   onChange={handleInputChange}
                   placeholder="Enter jersey number (1-99)"
-                  required
-                  min="1"
-                  max="99"
+                  // required
                   error={errors.jersey_number}
                 />
               </div>
-            </div>
+            </div> */}
 
             {/* Player Role Section */}
             <div>
@@ -417,7 +422,6 @@ const PlayerRegistration = () => {
               />
             </div>
 
-            {/* File Uploads Section */}
             <div>
               <h2 className="text-xl font-semibold text-gray-800 mb-4 pb-2 border-b">
                 Upload Documents
@@ -449,13 +453,14 @@ const PlayerRegistration = () => {
                       />
                     </div>
                   )} */}
-                  <FileUploadWithPreview
+                  {/*-----------------------------------*/}
+                  {/* <FileUploadWithPreview
                     label="ID Proof"
                     onChange={(e) => handleFileChange(e, "playerIdProof")}
                     preview={previews.playerIdProof}
                     required
                     error={errors.playerIdProof}
-                  />
+                  /> */}
                 </div>
                 <div>
                   {/* <UploadInput
@@ -474,13 +479,14 @@ const PlayerRegistration = () => {
                       />
                     </div>
                   )} */}
-                  <FileUploadWithPreview
+                  {/*-----------------------------------*/}
+                  {/* <FileUploadWithPreview
                     label="Payment Proof"
                     onChange={(e) => handleFileChange(e, "paymentProof")}
                     preview={previews.paymentProof}
                     required
                     error={errors.paymentProof}
-                  />
+                  /> */}
                 </div>
               </div>
             </div>

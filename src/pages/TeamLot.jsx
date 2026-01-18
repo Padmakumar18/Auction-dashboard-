@@ -647,7 +647,6 @@ export default function TeamLot() {
               </div>
             </div>
 
-            {/* Reset */}
             <button
               onClick={reset}
               className="w-full bg-sky-600 text-white py-3 rounded-lg font-semibold hover:bg-sky-700 transition"

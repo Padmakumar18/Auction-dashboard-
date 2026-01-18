@@ -123,9 +123,14 @@ const Players = () => {
         setLoading(true);
       }
       const getAllPlayers = await playersAPI.getAll();
+
+      const sortedPlayers = getAllPlayers.sort((a, b) =>
+        a.name.localeCompare(b.name)
+      );
+
       const getAllTeams = await teamsAPI.getAll();
       setTeams(getAllTeams);
-      setPlayers(getAllPlayers);
+      setPlayers(sortedPlayers);
 
       console.log("players");
       console.log(players);
