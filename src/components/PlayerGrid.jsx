@@ -55,27 +55,37 @@ const PlayerGrid = ({ data, teams, isAuthenticated, onEdit, onDelete }) => {
 
             {/* Player Details */}
             <div className="p-4">
-              <h3 className="text-lg font-bold text-gray-900 mb-1 truncate">
-                {player.name}
+              <h3 className="text-xl font-bold text-gray-900 mb-3 truncate">
+                {player.name} -{" "}
+                {player.role.charAt(0).toUpperCase() + player.role.slice(1)}
               </h3>
-              <p className="text-sm text-gray-600 mb-3">{player.role}</p>
+
+              <p className="text-base text-gray-600 mb-3">
+                Home Team : {player.player_own_team_name ?? "---------"}
+              </p>
+
+              <p className="text-base text-gray-600 mb-3">
+                Ph.no : {player.phone_number}
+              </p>
 
               <div className="space-y-2 mb-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-gray-500">Base Price:</span>
-                  <span className="text-sm font-semibold text-gray-700">
+                  <span className="text-sm text-gray-500">Base Price:</span>
+                  <span className="text-base font-semibold text-gray-700">
                     {formatCurrency(player.base_price)}
                   </span>
                 </div>
+
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-gray-500">Sold Price:</span>
-                  <span className="text-sm font-semibold text-gray-900">
+                  <span className="text-sm text-gray-500">Sold Price:</span>
+                  <span className="text-base font-semibold text-gray-900">
                     {formatCurrency(player.sold_price)}
                   </span>
                 </div>
+
                 <div className="flex justify-between items-center pt-2 border-t border-gray-100">
-                  <span className="text-xs text-gray-500">Team:</span>
-                  <span className="text-sm font-medium text-blue-600 truncate max-w-[150px]">
+                  <span className="text-sm text-gray-500">Team:</span>
+                  <span className="text-base font-medium text-blue-600 truncate max-w-[150px]">
                     {getTeamName(player.sold_to)}
                   </span>
                 </div>

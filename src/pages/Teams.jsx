@@ -51,21 +51,21 @@ const Teams = () => {
   const [selectedTeamDetails, setSelectedTeamDetails] = useState(null);
 
   useEffect(() => {
+    if (isAuthenticated) {
+      return;
+    }
+
+    const intervalId = setInterval(() => {
+      loadTeams();
+    }, 10000);
+
+    return () => clearInterval(intervalId);
+  }, []);
+
+  useEffect(() => {
     loadTeams();
     loadHelper();
   }, []);
-
-  // Auto-refresh every 15 seconds when not logged in
-  useEffect(() => {
-    if (!isAuthenticated) {
-      console.log("Yessss");
-      const interval = setInterval(() => {
-        loadTeams();
-      }, 15000); // 15 seconds
-
-      return () => clearInterval(interval);
-    }
-  }, [isAuthenticated]);
 
   const filteredTeams = teams.filter((team) =>
     team.team_name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -167,8 +167,8 @@ const Teams = () => {
   };
 
   const handleDeletePlayer = (player) => {
-    console.log("delete this player");
-    console.log(player);
+    // console.log("delete this player");
+    // console.log(player);
     toast(
       (t) => (
         <div className="flex flex-col gap-3">

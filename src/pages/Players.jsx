@@ -12,7 +12,12 @@ import UploadInput from "../components/UploadInput";
 import { supabase } from "../config/supabase";
 import useStore from "../store/useStore";
 import { playersAPI, teamsAPI, helperAPI } from "../services/api";
-import { formatCurrency, validatePlayer, parseCSV } from "../utils/helpers";
+import {
+  formatCurrency,
+  validatePlayer,
+  parseCSV,
+  formatDate,
+} from "../utils/helpers";
 
 import { useNavigate } from "react-router-dom";
 
@@ -37,6 +42,8 @@ const Players = () => {
     name: "",
     role: "",
     retainedBy: "",
+    playerOwnTeamName: null,
+    phoneNumber: null,
     photoFile: null,
     existingPhoto: null,
   });
@@ -58,23 +65,26 @@ const Players = () => {
   const roles = ["Batsman", "Bowler", "AllRounder"];
 
   useEffect(() => {
+    if (isAuthenticated) {
+      return;
+    }
+
+    const intervalId = setInterval(() => {
+      loadData();
+      // console.log("Loaded");
+    }, 10000);
+
+    return () => clearInterval(intervalId);
+  }, []);
+
+  useEffect(() => {
     loadData();
     loadHelper();
   }, []);
 
-  useEffect(() => {
-    console.log("selectedTeam updated:", selectedTeam);
-  }, [selectedTeam]);
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      const interval = setInterval(() => {
-        loadData();
-      }, 15000);
-
-      return () => clearInterval(interval);
-    }
-  }, [isAuthenticated]);
+  // useEffect(() => {
+  //   console.log("selectedTeam updated:", selectedTeam);
+  // }, [selectedTeam]);
 
   useEffect(() => {
     const unsoldPlayersCount = players
@@ -132,11 +142,11 @@ const Players = () => {
       setTeams(getAllTeams);
       setPlayers(sortedPlayers);
 
-      console.log("players");
-      console.log(players);
+      // console.log("players");
+      // console.log(players);
 
-      console.log("teams");
-      console.log(teams);
+      // console.log("teams");
+      // console.log(teams);
     } catch (error) {
       console.error("Error loading players:", error);
       if (isAuthenticated) {
@@ -154,8 +164,8 @@ const Players = () => {
       setSlectedTeam(null);
       return;
     }
-    console.log("team");
-    console.log(team);
+    // console.log("team");
+    // console.log(team);
 
     if (team.retained_playres_count === team.max_retain_players) {
       toast.error("Maximum Retain players reached");
@@ -188,6 +198,8 @@ const Players = () => {
     setFormData({
       name: player.name,
       role: matchedRole,
+      phoneNumber: player.phone_number,
+      playerOwnTeamName: player.player_own_team_name,
       photoFile: null,
       retainedBy: player.retained_team,
       existingPhoto: player.player_photo,
@@ -201,6 +213,8 @@ const Players = () => {
     setFormData({
       name: "",
       role: "",
+      playerOwnTeamName: null,
+      phoneNumber: null,
       photoFile: null,
       existingPhoto: null,
     });
@@ -261,16 +275,21 @@ const Players = () => {
             }
           : {};
 
-      console.log("selectedTeam");
-      console.log(selectedTeam);
+      // console.log("selectedTeam");
+      // console.log(selectedTeam);
 
-      console.log("retainingPlayer");
-      console.log(retainingPlayer);
+      // console.log("retainingPlayer");
+      // console.log(retainingPlayer);
 
       const playerData = {
         name: formData.name,
         role: normalizedRole,
+        phone_number: formData.phoneNumber,
         retained_team: formData.retainedBy,
+        player_own_team_name: formData.playerOwnTeamName
+          ? formData.playerOwnTeamName.charAt(0).toUpperCase() +
+            formData.playerOwnTeamName.slice(1)
+          : null,
         player_photo: photoUrl,
         ...retainingPlayer,
       };
@@ -306,8 +325,8 @@ const Players = () => {
         updateTeam(team.id, updated);
       }
 
-      console.log("playerData");
-      console.log(playerData);
+      // console.log("playerData");
+      // console.log(playerData);
 
       const updated = await playersAPI.update(editingPlayer.id, playerData);
       updatePlayer(editingPlayer.id, updated);
@@ -347,8 +366,8 @@ const Players = () => {
                 const loadingToast = toast.loading("Deleting player...");
 
                 try {
-                  console.log("player.id");
-                  console.log(player.id);
+                  // console.log("player.id");
+                  // console.log(player.id);
                   await playersAPI.delete(player);
                   removePlayer(player.id);
 
@@ -656,37 +675,62 @@ const Players = () => {
         title={editingPlayer ? "Edit Player" : "Add New Player"}
       >
         <div>
-          <Input
-            label="Player Name"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            placeholder="Enter player name"
-            required
-          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="Player Name"
+              value={formData.name}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
+              placeholder="Enter player name"
+              required
+            />
+            <Input
+              label="Phone Number"
+              value={formData.phoneNumber ?? ""}
+              onChange={(e) =>
+                setFormData({ ...formData, phoneNumber: e.target.value })
+              }
+              placeholder="91 XXXXXXXXXX"
+              // required
+            />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="Home Team Name"
+              value={formData.playerOwnTeamName}
+              onChange={(e) =>
+                setFormData({ ...formData, playerOwnTeamName: e.target.value })
+              }
+              placeholder="Team Name"
+              // required
+            />
 
-          <Select
-            label="Retained By"
-            value={formData.retainedBy ?? ""}
-            onChange={(e) => {
-              const selectedTeamId = e.target.value;
-              const selectedTeam = teams.find(
-                (team) => team.id === selectedTeamId
-              );
+            <Select
+              label="Retained By"
+              value={formData.retainedBy ?? ""}
+              onChange={(e) => {
+                const selectedTeamId = e.target.value;
+                const selectedTeam = teams.find(
+                  (team) => team.id === selectedTeamId
+                );
 
-              setFormData((prev) => ({
-                ...prev,
-                retainedBy: selectedTeamId,
-              }));
+                setFormData((prev) => ({
+                  ...prev,
+                  retainedBy: selectedTeamId,
+                }));
 
-              retainedTeam(selectedTeam);
-            }}
-            options={teams.map((team) => ({
-              value: team.id,
-              label: team.team_name,
-              disabled: team.retained_playres_count === team.max_retain_players,
-            }))}
-            placeholder="Select team"
-          />
+                retainedTeam(selectedTeam);
+              }}
+              options={teams.map((team) => ({
+                value: team.id,
+                label: team.team_name,
+                disabled:
+                  team.retained_playres_count === team.max_retain_players,
+              }))}
+              placeholder="Select team"
+            />
+          </div>
 
           <Select
             label="Role"

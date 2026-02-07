@@ -25,8 +25,8 @@ const Analytics = () => {
 
   useEffect(() => {
     loadData();
-    console.log("teams");
-    console.log(teams);
+    // console.log("teams");
+    // console.log(teams);
   }, []);
 
   const loadData = async () => {

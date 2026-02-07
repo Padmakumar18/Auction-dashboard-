@@ -7,7 +7,7 @@ const FileUploadWithPreview = ({
   error,
   preview,
   accept = "image/*",
-  maxSize = 5,
+  maxSize = 2,
   className = "",
 }) => {
   const [dragActive, setDragActive] = useState(false);

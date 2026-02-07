@@ -289,8 +289,6 @@ const Auction = () => {
         points_left: team.points_left - currentBid.amount,
       });
 
-      // Reset auction state
-
       // toast.success("Player sold successfully!");
       toast.success(
         `Player has been successfully sold to ${team.team_name} for a price of ${bidAmount}`,
@@ -458,15 +456,20 @@ const Auction = () => {
                   <div className="lg:w-3/5">
                     {/* Player Info */}
                     <div className="mb-8">
-                      <h2 className="text-5xl font-bold text-gray-900 mb-3">
-                        {currentPlayer.name}
+                      <h2 className="text-4xl font-bold text-gray-900 mb-3">
+                        {currentPlayer.name} -{" "}
+                        <span>
+                          {currentPlayer.role.charAt(0).toUpperCase() +
+                            currentPlayer.role.slice(1)}
+                        </span>
                       </h2>
+                      <p className="text-2xl font-bold text-gray-600 mb-4"></p>
                       <p className="text-2xl text-gray-600 mb-4">
-                        {currentPlayer.role}
+                        Home Team : {currentPlayer.player_own_team_name}
                       </p>
                       <div>
                         <span className="text-lg text-gray-600">
-                          Base Price:{" "}
+                          Base Price :{" "}
                         </span>
                         <span className="text-3xl font-bold text-green-700">
                           {formatCurrency(currentPlayer.base_price)}
@@ -528,7 +531,7 @@ const Auction = () => {
                       {/* Bid Input and Buttons */}
                       <div className="space-y-4">
                         <input
-                          type="number"
+                          type="text"
                           value={bidAmount}
                           onChange={(e) => setBidAmount(e.target.value)}
                           placeholder="Enter bid amount"

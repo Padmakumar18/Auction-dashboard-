@@ -69,8 +69,8 @@ const PlayerRegistration = () => {
       const data = await helperAPI.getAll();
       setHelper(data);
 
-      console.log("helper");
-      console.log(helper);
+      // console.log("helper");
+      // console.log(helper);
 
       // console.log("helper");
       // console.log(helper);
@@ -98,7 +98,7 @@ const PlayerRegistration = () => {
       if (file.size > 2 * 1024 * 1024) {
         setErrors((prev) => ({
           ...prev,
-          [fieldName]: "File size must be less than 5MB",
+          [fieldName]: "File size must be less than 2MB",
         }));
         return;
       }
@@ -129,9 +129,9 @@ const PlayerRegistration = () => {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.name.trim()) {
-      newErrors.name = "Player name is required";
-    }
+    // if (!formData.name.trim()) {
+    //   newErrors.name = "Player name is required";
+    // }
 
     // if (!formData.phone_number || formData.phone_number.length != 10) {
     //   newErrors.phone_number = "Enter valid phone number";
